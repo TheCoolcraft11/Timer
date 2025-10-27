@@ -1,0 +1,22 @@
+name: Timer
+version: '1.0-SNAPSHOT'
+main: de.thecoolcraft11.timer.Timer
+api-version: '1.21'
+
+commands:
+  timer:
+    description: Control the timer plugin
+    usage: /timer <start|stop|pause|resume|reset|set|mode|target|info|save|reload|help>
+    permission: timer.use
+
+permissions:
+  timer.use:
+    description: Allows use of timer commands
+    default: op
+  timer.admin:
+    description: Full timer administration
+    default: op
+    children:
+      timer.use: true
+
+

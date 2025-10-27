@@ -1,0 +1,52 @@
+# Timer Plugin Configuration
+# This file is automatically updated when timer state changes
+# Those settings here can be changed either manually here or via commands
+timer:
+  # Current timer value in seconds
+  current-time: 0
+
+  # Timer direction: true for counting up, false for counting down
+  counting-up: true
+
+  # Animation settings for the action bar display
+  animation:
+    # Animation type: gradient, wave, pulse, rainbow, still
+    # - gradient: Smooth color transition from color1 to color2
+    # - wave: Animated wave effect moving through the text
+    # - pulse: Entire text pulses between color1 and color2
+    # - rainbow: Animated rainbow effect cycling through all colors
+    # - still: Static single color (uses color1)
+    type: gradient
+
+    # Primary color (hex format, e.g., #00FF00 for green)
+    color1: "#00FF00"
+
+    # Secondary color (hex format, e.g., #0080FF for blue)
+    color2: "#0080FF"
+
+    # Time set animation duration in ticks (20 ticks = 1 second)
+    # Default: 10 ticks (0.5 seconds)
+    # Set to 0 to disable animation and instantly set time
+    set-animation-duration: 10
+
+    # Color animation speed multiplier
+    # Controls how fast wave, pulse, and rainbow animations move
+    # Default: 1.0 (normal speed)
+    # Range: 0.1 (very slow) to 10.0 (very fast)
+    # Examples: 0.5 = half speed, 2.0 = double speed
+    speed: 1.0
+
+  # Multiple targets can be configured
+  # Each target has an ID, time (in seconds), and optional command
+  targets:
+    # Example target configurations (commented out by default):
+    # warning1:
+    #   time: 300
+    #   command: say 5 minutes remaining!
+    # warning2:
+    #   time: 60
+    #   command: say 1 minute remaining!
+    # end:
+    #   time: 0
+    #   command: say Time's up!
+
