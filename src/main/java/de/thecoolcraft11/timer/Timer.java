@@ -19,6 +19,11 @@ public final class Timer extends JavaPlugin {
         Objects.requireNonNull(getCommand("timer")).setExecutor(timerCommand);
         Objects.requireNonNull(getCommand("timer")).setTabCompleter(timerCommand);
 
+        ResetCommand resetCommand = new ResetCommand(this);
+        Objects.requireNonNull(getCommand("reset")).setExecutor(resetCommand);
+        Objects.requireNonNull(getCommand("reset")).setTabCompleter(resetCommand);
+
+
         
         timerTask = new TimerTask(timerManager);
         timerTask.runTaskTimer(this, 0L, 1L); 

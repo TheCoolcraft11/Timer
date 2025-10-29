@@ -8,6 +8,10 @@ commands:
     description: Control the timer plugin
     usage: /timer <start|stop|pause|resume|reset|set|mode|target|info|save|reload|help>
     permission: timer.use
+  reset:
+    description: Reset the world (overworld, nether, and end) with optional seed
+    usage: /reset [seed]
+    permission: timer.admin
 
 permissions:
   timer.use:
