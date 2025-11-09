@@ -18,8 +18,9 @@ public class TimerTask extends BukkitRunnable {
 
         
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendActionBar(timerManager.getDisplayText());
+            if (timerManager.isActionbarVisible()) {
+                player.sendActionBar(timerManager.getDisplayText());
+            }
         }
     }
 }
-

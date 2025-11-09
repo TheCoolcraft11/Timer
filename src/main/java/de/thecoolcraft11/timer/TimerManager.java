@@ -24,6 +24,9 @@ public class TimerManager {
     private long animationStartTick;
     private int animationDurationTicks; 
 
+    
+    private boolean showActionbar;
+
     public TimerManager(Timer plugin) {
         this.plugin = plugin;
         this.running = false;
@@ -38,6 +41,7 @@ public class TimerManager {
         this.animationTargetTime = 0;
         this.animationStartTick = 0;
         this.animationDurationTicks = 10; 
+        this.showActionbar = true; 
         loadFromConfig();
     }
 
@@ -47,6 +51,7 @@ public class TimerManager {
         this.countingUp = config.getBoolean("timer.counting-up", true);
         this.animationDurationTicks = config.getInt("timer.animation.set-animation-duration", 10);
         this.animationSpeed = config.getDouble("timer.animation.speed", 1.0);
+        this.showActionbar = config.getBoolean("timer.show-actionbar", true);
 
         
         if (this.animationDurationTicks <= 0) {
@@ -76,6 +81,7 @@ public class TimerManager {
         FileConfiguration config = plugin.getConfig();
         config.set("timer.current-time", currentTime);
         config.set("timer.counting-up", countingUp);
+        config.set("timer.show-actionbar", showActionbar);
 
         
         config.set("timer.targets", null); 
@@ -84,6 +90,20 @@ public class TimerManager {
             config.set("timer.targets." + target.getId() + ".command", target.getCommand());
         }
         plugin.saveConfig();
+    }
+
+    /**
+     * Set whether the timer should be visible on players' action bars.
+     */
+    public void setActionbarVisible(boolean visible) {
+        this.showActionbar = visible;
+    }
+
+    /**
+     * Returns whether the timer is currently shown on players' action bars.
+     */
+    public boolean isActionbarVisible() {
+        return showActionbar;
     }
 
     public void tick() {
@@ -399,11 +419,7 @@ public class TimerManager {
         
         if (speed < 0.1) {
             this.animationSpeed = 0.1;
-        } else if (speed > 10.0) {
-            this.animationSpeed = 10.0;
-        } else {
-            this.animationSpeed = speed;
-        }
+        } else this.animationSpeed = Math.min(speed, 10.0);
     }
 }
 

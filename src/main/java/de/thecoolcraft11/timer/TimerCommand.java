@@ -27,28 +27,28 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
         if (input == null) return null;
         input = input.trim();
         if (input.matches("#[0-9A-Fa-f]{6}")) return input.toUpperCase();
-        switch (input.toLowerCase()) {
-            case "red": return "#FF0000";
-            case "blue": return "#0000FF";
-            case "magenta": return "#FF00FF";
-            case "green": return "#00FF00";
-            case "yellow": return "#FFFF00";
-            case "cyan": case "aqua": return "#00FFFF";
-            case "white": return "#FFFFFF";
-            case "black": return "#000000";
-            case "gray": case "grey": return "#808080";
-            case "dark_gray": case "darkgray": case "dark-grey": case "darkgrey": return "#404040";
-            case "orange": return "#FFA500";
-            case "purple": return "#800080";
-            case "pink": return "#FFC0CB";
-            case "lime": return "#00FF00";
-            case "navy": return "#000080";
-            case "maroon": return "#800000";
-            case "olive": return "#808000";
-            case "teal": return "#008080";
-            case "gold": return "#FFD700";
-            default: return null;
-        }
+        return switch (input.toLowerCase()) {
+            case "red" -> "#FF0000";
+            case "blue" -> "#0000FF";
+            case "magenta" -> "#FF00FF";
+            case "green" -> "#008000";
+            case "yellow" -> "#FFFF00";
+            case "cyan", "aqua" -> "#00FFFF";
+            case "white" -> "#FFFFFF";
+            case "black" -> "#000000";
+            case "gray", "grey" -> "#808080";
+            case "dark_gray", "darkgray", "dark-grey", "darkgrey" -> "#404040";
+            case "orange" -> "#FFA500";
+            case "purple" -> "#800080";
+            case "pink" -> "#FFC0CB";
+            case "lime" -> "#00FF00";
+            case "navy" -> "#000080";
+            case "maroon" -> "#800000";
+            case "olive" -> "#808000";
+            case "teal" -> "#008080";
+            case "gold" -> "#FFD700";
+            default -> null;
+        };
     }
 
     @Override
@@ -59,244 +59,254 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
         }
 
         switch (args[0].toLowerCase()) {
+            case "hide":
+                timerManager.setActionbarVisible(false);
+                sender.sendMessage(Component.text("Timer hidden from actionbar!").color(NamedTextColor.YELLOW));
+                break;
+
+            case "show":
+                timerManager.setActionbarVisible(true);
+                sender.sendMessage(Component.text("Timer shown on actionbar!").color(NamedTextColor.GREEN));
+                break;
+
             case "start":
-                timerManager.start();
-                sender.sendMessage(Component.text("Timer started!").color(NamedTextColor.GREEN));
-                break;
+                 timerManager.start();
+                 sender.sendMessage(Component.text("Timer started!").color(NamedTextColor.GREEN));
+                 break;
 
-            case "stop":
-                timerManager.stop();
-                sender.sendMessage(Component.text("Timer stopped!").color(NamedTextColor.RED));
-                break;
+             case "stop":
+                 timerManager.stop();
+                 sender.sendMessage(Component.text("Timer stopped!").color(NamedTextColor.RED));
+                 break;
 
-            case "pause":
-                timerManager.pause();
-                sender.sendMessage(Component.text("Timer paused!").color(NamedTextColor.YELLOW));
-                break;
+             case "pause":
+                 timerManager.pause();
+                 sender.sendMessage(Component.text("Timer paused!").color(NamedTextColor.YELLOW));
+                 break;
 
-            case "resume":
-                timerManager.resume();
-                sender.sendMessage(Component.text("Timer resumed!").color(NamedTextColor.GREEN));
-                break;
+             case "resume":
+                 timerManager.resume();
+                 sender.sendMessage(Component.text("Timer resumed!").color(NamedTextColor.GREEN));
+                 break;
 
-            case "reset":
-                timerManager.reset();
-                sender.sendMessage(Component.text("Timer reset!").color(NamedTextColor.YELLOW));
-                break;
+             case "reset":
+                 timerManager.reset();
+                 sender.sendMessage(Component.text("Timer reset!").color(NamedTextColor.YELLOW));
+                 break;
 
-            case "set":
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("Usage: /timer set <time>").color(NamedTextColor.RED));
-                    sender.sendMessage(Component.text("Example: /timer set 1h30m or /timer set 90 (seconds)").color(NamedTextColor.GRAY));
-                    return true;
-                }
-                try {
-                    long seconds = parseTime(args[1]);
-                    timerManager.setTime(seconds);
-                    sender.sendMessage(Component.text("Set timer to " + seconds + " seconds...").color(NamedTextColor.GREEN));
-                } catch (IllegalArgumentException e) {
-                    sender.sendMessage(Component.text("Invalid time format! Use format like: 1h30m or 90").color(NamedTextColor.RED));
-                }
-                break;
+             case "set":
+                 if (args.length < 2) {
+                     sender.sendMessage(Component.text("Usage: /timer set <time>").color(NamedTextColor.RED));
+                     sender.sendMessage(Component.text("Example: /timer set 1h30m or /timer set 90 (seconds)").color(NamedTextColor.GRAY));
+                     return true;
+                 }
+                 try {
+                     long seconds = parseTime(args[1]);
+                     timerManager.setTime(seconds);
+                     sender.sendMessage(Component.text("Set timer to " + seconds + " seconds...").color(NamedTextColor.GREEN));
+                 } catch (IllegalArgumentException e) {
+                     sender.sendMessage(Component.text("Invalid time format! Use format like: 1h30m or 90").color(NamedTextColor.RED));
+                 }
+                 break;
 
-            case "mode":
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("Usage: /timer mode <up|down>").color(NamedTextColor.RED));
-                    return true;
-                }
-                if (args[1].equalsIgnoreCase("up")) {
-                    timerManager.setCountingUp(true);
-                    sender.sendMessage(Component.text("Timer mode set to COUNT UP!").color(NamedTextColor.GREEN));
-                } else if (args[1].equalsIgnoreCase("down")) {
-                    timerManager.setCountingUp(false);
-                    sender.sendMessage(Component.text("Timer mode set to COUNT DOWN!").color(NamedTextColor.GREEN));
-                } else {
-                    sender.sendMessage(Component.text("Invalid mode! Use 'up' or 'down'").color(NamedTextColor.RED));
-                }
-                break;
+             case "mode":
+                 if (args.length < 2) {
+                     sender.sendMessage(Component.text("Usage: /timer mode <up|down>").color(NamedTextColor.RED));
+                     return true;
+                 }
+                 if (args[1].equalsIgnoreCase("up")) {
+                     timerManager.setCountingUp(true);
+                     sender.sendMessage(Component.text("Timer mode set to COUNT UP!").color(NamedTextColor.GREEN));
+                 } else if (args[1].equalsIgnoreCase("down")) {
+                     timerManager.setCountingUp(false);
+                     sender.sendMessage(Component.text("Timer mode set to COUNT DOWN!").color(NamedTextColor.GREEN));
+                 } else {
+                     sender.sendMessage(Component.text("Invalid mode! Use 'up' or 'down'").color(NamedTextColor.RED));
+                 }
+                 break;
 
-            case "target":
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("Usage: /timer target <add|remove|list|clear> [args...]").color(NamedTextColor.RED));
-                    sender.sendMessage(Component.text("Examples:").color(NamedTextColor.GRAY));
-                    sender.sendMessage(Component.text("  /timer target add <id> <time> [command]").color(NamedTextColor.GRAY));
-                    sender.sendMessage(Component.text("  /timer target remove <id>").color(NamedTextColor.GRAY));
-                    sender.sendMessage(Component.text("  /timer target list").color(NamedTextColor.GRAY));
-                    sender.sendMessage(Component.text("  /timer target clear").color(NamedTextColor.GRAY));
-                    return true;
-                }
+             case "target":
+                 if (args.length < 2) {
+                     sender.sendMessage(Component.text("Usage: /timer target <add|remove|list|clear> [args...]").color(NamedTextColor.RED));
+                     sender.sendMessage(Component.text("Examples:").color(NamedTextColor.GRAY));
+                     sender.sendMessage(Component.text("  /timer target add <id> <time> [command]").color(NamedTextColor.GRAY));
+                     sender.sendMessage(Component.text("  /timer target remove <id>").color(NamedTextColor.GRAY));
+                     sender.sendMessage(Component.text("  /timer target list").color(NamedTextColor.GRAY));
+                     sender.sendMessage(Component.text("  /timer target clear").color(NamedTextColor.GRAY));
+                     return true;
+                 }
 
-                switch (args[1].toLowerCase()) {
-                    case "add":
-                        if (args.length < 4) {
-                            sender.sendMessage(Component.text("Usage: /timer target add <id> <time> [command]").color(NamedTextColor.RED));
-                            sender.sendMessage(Component.text("Example: /timer target add warning1 5m say 5 minutes remaining!").color(NamedTextColor.GRAY));
-                            return true;
-                        }
-                        try {
-                            String id = args[2];
-                            long targetTime = parseTime(args[3]);
-                            String targetCommand = createTargetCommand(args);
+                 switch (args[1].toLowerCase()) {
+                     case "add":
+                         if (args.length < 4) {
+                             sender.sendMessage(Component.text("Usage: /timer target add <id> <time> [command]").color(NamedTextColor.RED));
+                             sender.sendMessage(Component.text("Example: /timer target add warning1 5m say 5 minutes remaining!").color(NamedTextColor.GRAY));
+                             return true;
+                         }
+                         try {
+                             String id = args[2];
+                             long targetTime = parseTime(args[3]);
+                             String targetCommand = createTargetCommand(args);
 
-                            timerManager.addTarget(id, targetTime, targetCommand);
-                            sender.sendMessage(Component.text("Target '" + id + "' added at " + targetTime + " seconds" +
-                                    (targetCommand != null ? " with command: " + targetCommand : "")).color(NamedTextColor.GREEN));
-                        } catch (IllegalArgumentException e) {
-                            sender.sendMessage(Component.text("Invalid time format! Use format like: 1h30m or 90").color(NamedTextColor.RED));
-                        }
-                        break;
+                             timerManager.addTarget(id, targetTime, targetCommand);
+                             sender.sendMessage(Component.text("Target '" + id + "' added at " + targetTime + " seconds" +
+                                     (targetCommand != null ? " with command: " + targetCommand : "")).color(NamedTextColor.GREEN));
+                         } catch (IllegalArgumentException e) {
+                             sender.sendMessage(Component.text("Invalid time format! Use format like: 1h30m or 90").color(NamedTextColor.RED));
+                         }
+                         break;
 
-                    case "remove":
-                        if (args.length < 3) {
-                            sender.sendMessage(Component.text("Usage: /timer target remove <id>").color(NamedTextColor.RED));
-                            return true;
-                        }
-                        String removeId = args[2];
-                        if (timerManager.removeTarget(removeId)) {
-                            sender.sendMessage(Component.text("Target '" + removeId + "' removed!").color(NamedTextColor.GREEN));
-                        } else {
-                            sender.sendMessage(Component.text("Target '" + removeId + "' not found!").color(NamedTextColor.RED));
-                        }
-                        break;
+                     case "remove":
+                         if (args.length < 3) {
+                             sender.sendMessage(Component.text("Usage: /timer target remove <id>").color(NamedTextColor.RED));
+                             return true;
+                         }
+                         String removeId = args[2];
+                         if (timerManager.removeTarget(removeId)) {
+                             sender.sendMessage(Component.text("Target '" + removeId + "' removed!").color(NamedTextColor.GREEN));
+                         } else {
+                             sender.sendMessage(Component.text("Target '" + removeId + "' not found!").color(NamedTextColor.RED));
+                         }
+                         break;
 
-                    case "list":
-                        if (timerManager.hasNoTargets()) {
-                            sender.sendMessage(Component.text("No targets configured.").color(NamedTextColor.YELLOW));
-                        } else {
-                            sender.sendMessage(Component.text("===== Configured Targets =====").color(NamedTextColor.GOLD));
-                            for (TimerTarget target : timerManager.getAllTargets()) {
-                                String status = target.isExecuted() ? " [EXECUTED]" : "";
-                                sender.sendMessage(Component.text("• " + target.getId() + ": ").color(NamedTextColor.YELLOW)
-                                        .append(Component.text(target.getTime() + "s").color(NamedTextColor.WHITE))
-                                        .append(Component.text(target.getCommand() != null ? " → " + target.getCommand() : "").color(NamedTextColor.GRAY))
-                                        .append(Component.text(status).color(NamedTextColor.DARK_GRAY)));
-                            }
-                        }
-                        break;
+                     case "list":
+                         if (timerManager.hasNoTargets()) {
+                             sender.sendMessage(Component.text("No targets configured.").color(NamedTextColor.YELLOW));
+                         } else {
+                             sender.sendMessage(Component.text("===== Configured Targets =====").color(NamedTextColor.GOLD));
+                             for (TimerTarget target : timerManager.getAllTargets()) {
+                                 String status = target.isExecuted() ? " [EXECUTED]" : "";
+                                 sender.sendMessage(Component.text("• " + target.getId() + ": ").color(NamedTextColor.YELLOW)
+                                         .append(Component.text(target.getTime() + "s").color(NamedTextColor.WHITE))
+                                         .append(Component.text(target.getCommand() != null ? " → " + target.getCommand() : "").color(NamedTextColor.GRAY))
+                                         .append(Component.text(status).color(NamedTextColor.DARK_GRAY)));
+                             }
+                         }
+                         break;
 
-                    case "clear":
-                        timerManager.clearAllTargets();
-                        sender.sendMessage(Component.text("All targets cleared!").color(NamedTextColor.YELLOW));
-                        break;
+                     case "clear":
+                         timerManager.clearAllTargets();
+                         sender.sendMessage(Component.text("All targets cleared!").color(NamedTextColor.YELLOW));
+                         break;
 
-                    default:
-                        sender.sendMessage(Component.text("Unknown target subcommand! Use: add, remove, list, or clear").color(NamedTextColor.RED));
-                        break;
-                }
-                break;
+                     default:
+                         sender.sendMessage(Component.text("Unknown target subcommand! Use: add, remove, list, or clear").color(NamedTextColor.RED));
+                         break;
+                 }
+                 break;
 
-            case "info":
-                showInfo(sender);
-                break;
+             case "info":
+                 showInfo(sender);
+                 break;
 
-            case "save":
-                timerManager.saveToConfig();
-                sender.sendMessage(Component.text("Timer configuration saved!").color(NamedTextColor.GREEN));
-                break;
+             case "save":
+                 timerManager.saveToConfig();
+                 sender.sendMessage(Component.text("Timer configuration saved!").color(NamedTextColor.GREEN));
+                 break;
 
-            case "reload":
-                timerManager.loadFromConfig();
-                sender.sendMessage(Component.text("Timer configuration reloaded!").color(NamedTextColor.GREEN));
-                break;
+             case "reload":
+                 timerManager.loadFromConfig();
+                 sender.sendMessage(Component.text("Timer configuration reloaded!").color(NamedTextColor.GREEN));
+                 break;
 
-            case "animation":
-            case "anim":
-                if (args.length < 2) {
-                    sender.sendMessage(Component.text("Usage: /timer animation <type|color1|color2|speed> <value>").color(NamedTextColor.RED));
-                    sender.sendMessage(Component.text("Types: gradient, wave, pulse, rainbow, still").color(NamedTextColor.GRAY));
-                    sender.sendMessage(Component.text("Example: /timer animation type wave").color(NamedTextColor.GRAY));
-                    sender.sendMessage(Component.text("Example: /timer animation color1 #FF0000 (or 'red')").color(NamedTextColor.GRAY));
-                    sender.sendMessage(Component.text("Example: /timer animation speed 2.0").color(NamedTextColor.GRAY));
-                    return true;
-                }
+             case "animation":
+             case "anim":
+                 if (args.length < 2) {
+                     sender.sendMessage(Component.text("Usage: /timer animation <type|color1|color2|speed> <value>").color(NamedTextColor.RED));
+                     sender.sendMessage(Component.text("Types: gradient, wave, pulse, rainbow, still").color(NamedTextColor.GRAY));
+                     sender.sendMessage(Component.text("Example: /timer animation type wave").color(NamedTextColor.GRAY));
+                     sender.sendMessage(Component.text("Example: /timer animation color1 #FF0000 (or 'red')").color(NamedTextColor.GRAY));
+                     sender.sendMessage(Component.text("Example: /timer animation speed 2.0").color(NamedTextColor.GRAY));
+                     return true;
+                 }
 
-                switch (args[1].toLowerCase()) {
-                    case "type":
-                        if (args.length < 3) {
-                            sender.sendMessage(Component.text("Usage: /timer animation type <gradient|wave|pulse|rainbow|still>").color(NamedTextColor.RED));
-                            return true;
-                        }
-                        String type = args[2].toLowerCase();
-                        if (!type.equals("gradient") && !type.equals("wave") && !type.equals("pulse")
-                                && !type.equals("rainbow") && !type.equals("still")) {
-                            sender.sendMessage(Component.text("Invalid animation type! Use: gradient, wave, pulse, rainbow, or still").color(NamedTextColor.RED));
-                            return true;
-                        }
-                        plugin.getConfig().set("timer.animation.type", type);
-                        plugin.saveConfig();
-                        sender.sendMessage(Component.text("Animation type set to: " + type).color(NamedTextColor.GREEN));
-                        break;
+                 switch (args[1].toLowerCase()) {
+                     case "type":
+                         if (args.length < 3) {
+                             sender.sendMessage(Component.text("Usage: /timer animation type <gradient|wave|pulse|rainbow|still>").color(NamedTextColor.RED));
+                             return true;
+                         }
+                         String type = args[2].toLowerCase();
+                         if (!type.equals("gradient") && !type.equals("wave") && !type.equals("pulse")
+                                 && !type.equals("rainbow") && !type.equals("still")) {
+                             sender.sendMessage(Component.text("Invalid animation type! Use: gradient, wave, pulse, rainbow, or still").color(NamedTextColor.RED));
+                             return true;
+                         }
+                         plugin.getConfig().set("timer.animation.type", type);
+                         plugin.saveConfig();
+                         sender.sendMessage(Component.text("Animation type set to: " + type).color(NamedTextColor.GREEN));
+                         break;
 
-                    case "color1":
-                        if (args.length < 3) {
-                            sender.sendMessage(Component.text("Usage: /timer animation color1 <hex|name>").color(NamedTextColor.RED));
-                            sender.sendMessage(Component.text("Example: /timer animation color1 #FF0000 or /timer animation color1 red").color(NamedTextColor.GRAY));
-                            return true;
-                        }
-                        String color1 = args[2];
-                        String resolved1 = resolveColorToHex(color1);
-                        if (resolved1 == null) {
-                            sender.sendMessage(Component.text("Invalid color! Use hex: #RRGGBB or a name like 'red', 'blue', 'magenta'").color(NamedTextColor.RED));
-                            return true;
-                        }
-                        plugin.getConfig().set("timer.animation.color1", resolved1);
-                        plugin.saveConfig();
-                        sender.sendMessage(Component.text("Color 1 set to: " + resolved1).color(NamedTextColor.GREEN));
-                        break;
+                     case "color1":
+                         if (args.length < 3) {
+                             sender.sendMessage(Component.text("Usage: /timer animation color1 <hex|name>").color(NamedTextColor.RED));
+                             sender.sendMessage(Component.text("Example: /timer animation color1 #FF0000 or /timer animation color1 red").color(NamedTextColor.GRAY));
+                             return true;
+                         }
+                         String color1 = args[2];
+                         String resolved1 = resolveColorToHex(color1);
+                         if (resolved1 == null) {
+                             sender.sendMessage(Component.text("Invalid color! Use hex: #RRGGBB or a name like 'red', 'blue', 'magenta'").color(NamedTextColor.RED));
+                             return true;
+                         }
+                         plugin.getConfig().set("timer.animation.color1", resolved1);
+                         plugin.saveConfig();
+                         sender.sendMessage(Component.text("Color 1 set to: " + resolved1).color(NamedTextColor.GREEN));
+                         break;
 
-                    case "color2":
-                        if (args.length < 3) {
-                            sender.sendMessage(Component.text("Usage: /timer animation color2 <hex|name>").color(NamedTextColor.RED));
-                            sender.sendMessage(Component.text("Example: /timer animation color2 #0000FF or /timer animation color2 blue").color(NamedTextColor.GRAY));
-                            return true;
-                        }
-                        String color2 = args[2];
-                        String resolved2 = resolveColorToHex(color2);
-                        if (resolved2 == null) {
-                            sender.sendMessage(Component.text("Invalid color! Use hex: #RRGGBB or a name like 'red', 'blue', 'magenta'").color(NamedTextColor.RED));
-                            return true;
-                        }
-                        plugin.getConfig().set("timer.animation.color2", resolved2);
-                        plugin.saveConfig();
-                        sender.sendMessage(Component.text("Color 2 set to: " + resolved2).color(NamedTextColor.GREEN));
-                        break;
+                     case "color2":
+                         if (args.length < 3) {
+                             sender.sendMessage(Component.text("Usage: /timer animation color2 <hex|name>").color(NamedTextColor.RED));
+                             sender.sendMessage(Component.text("Example: /timer animation color2 #0000FF or /timer animation color2 blue").color(NamedTextColor.GRAY));
+                             return true;
+                         }
+                         String color2 = args[2];
+                         String resolved2 = resolveColorToHex(color2);
+                         if (resolved2 == null) {
+                             sender.sendMessage(Component.text("Invalid color! Use hex: #RRGGBB or a name like 'red', 'blue', 'magenta'").color(NamedTextColor.RED));
+                             return true;
+                         }
+                         plugin.getConfig().set("timer.animation.color2", resolved2);
+                         plugin.saveConfig();
+                         sender.sendMessage(Component.text("Color 2 set to: " + resolved2).color(NamedTextColor.GREEN));
+                         break;
 
-                    case "speed":
-                        if (args.length < 3) {
-                            sender.sendMessage(Component.text("Usage: /timer animation speed <multiplier>").color(NamedTextColor.RED));
-                            sender.sendMessage(Component.text("Range: 0.1 to 10.0 (default: 1.0)").color(NamedTextColor.GRAY));
-                            sender.sendMessage(Component.text("Example: /timer animation speed 2.0 (double speed)").color(NamedTextColor.GRAY));
-                            return true;
-                        }
-                        try {
-                            double speed = Double.parseDouble(args[2]);
-                            if (speed < 0.1 || speed > 10.0) {
-                                sender.sendMessage(Component.text("Speed must be between 0.1 and 10.0!").color(NamedTextColor.RED));
-                                return true;
-                            }
-                            timerManager.setAnimationSpeed(speed);
-                            plugin.getConfig().set("timer.animation.speed", speed);
-                            plugin.saveConfig();
-                            sender.sendMessage(Component.text("Animation speed set to: " + speed + "x").color(NamedTextColor.GREEN));
-                        } catch (NumberFormatException e) {
-                            sender.sendMessage(Component.text("Invalid number! Use a decimal like 1.0, 2.5, etc.").color(NamedTextColor.RED));
-                        }
-                        break;
+                     case "speed":
+                         if (args.length < 3) {
+                             sender.sendMessage(Component.text("Usage: /timer animation speed <multiplier>").color(NamedTextColor.RED));
+                             sender.sendMessage(Component.text("Range: 0.1 to 10.0 (default: 1.0)").color(NamedTextColor.GRAY));
+                             sender.sendMessage(Component.text("Example: /timer animation speed 2.0 (double speed)").color(NamedTextColor.GRAY));
+                             return true;
+                         }
+                         try {
+                             double speed = Double.parseDouble(args[2]);
+                             if (speed < 0.1 || speed > 10.0) {
+                                 sender.sendMessage(Component.text("Speed must be between 0.1 and 10.0!").color(NamedTextColor.RED));
+                                 return true;
+                             }
+                             timerManager.setAnimationSpeed(speed);
+                             plugin.getConfig().set("timer.animation.speed", speed);
+                             plugin.saveConfig();
+                             sender.sendMessage(Component.text("Animation speed set to: " + speed + "x").color(NamedTextColor.GREEN));
+                         } catch (NumberFormatException e) {
+                             sender.sendMessage(Component.text("Invalid number! Use a decimal like 1.0, 2.5, etc.").color(NamedTextColor.RED));
+                         }
+                         break;
 
-                    default:
-                        sender.sendMessage(Component.text("Unknown animation option! Use: type, color1, color2, or speed").color(NamedTextColor.RED));
-                        break;
-                }
-                break;
+                     default:
+                         sender.sendMessage(Component.text("Unknown animation option! Use: type, color1, color2, or speed").color(NamedTextColor.RED));
+                         break;
+                 }
+                 break;
 
-            case "help":
-                sendHelp(sender);
-                break;
+             case "help":
+                 sendHelp(sender);
+                 break;
 
-            default:
-                sender.sendMessage(Component.text("Unknown command! Use /timer help for help.").color(NamedTextColor.RED));
-                break;
-        }
+             default:
+                 sender.sendMessage(Component.text("Unknown command! Use /timer help for help.").color(NamedTextColor.RED));
+                 break;
+         }
 
         return true;
     }
@@ -317,6 +327,10 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(Component.text("===== Timer Plugin Help =====").color(NamedTextColor.GOLD));
+        sender.sendMessage(Component.text("/timer hide").color(NamedTextColor.YELLOW)
+                .append(Component.text(" - Hide the timer from the actionbar").color(NamedTextColor.WHITE)));
+        sender.sendMessage(Component.text("/timer show").color(NamedTextColor.YELLOW)
+                .append(Component.text(" - Show the timer on the actionbar").color(NamedTextColor.WHITE)));
         sender.sendMessage(Component.text("/timer start").color(NamedTextColor.YELLOW)
                 .append(Component.text(" - Start the timer").color(NamedTextColor.WHITE)));
         sender.sendMessage(Component.text("/timer stop").color(NamedTextColor.YELLOW)
@@ -430,7 +444,7 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
 
         if (args.length == 1) {
             List<String> commands = Arrays.asList("start", "stop", "pause", "resume", "reset",
-                    "set", "mode", "target", "animation", "anim", "info", "save", "reload", "help");
+                    "set", "mode", "target", "animation", "anim", "hide", "show", "info", "save", "reload", "help");
             for (String cmd : commands) {
                 if (cmd.toLowerCase().startsWith(args[0].toLowerCase())) {
                     completions.add(cmd);
