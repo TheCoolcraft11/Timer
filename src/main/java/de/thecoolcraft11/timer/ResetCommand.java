@@ -109,7 +109,7 @@ public class ResetCommand implements CommandExecutor, TabCompleter {
         plugin.getLogger().info("World reset completed with seed: " + seed);
 
 
-        Bukkit.getScheduler().runTaskLater(plugin, Bukkit::shutdown, 20L);
+        Bukkit.getScheduler().runTaskLater(plugin, Bukkit::restart, 20L);
     }
 
     private void deleteWorld(String worldName) {
@@ -144,7 +144,7 @@ public class ResetCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
 
             completions.add("<seed>");
-            completions.add(String.valueOf(Bukkit.getServer().getWorlds().get(0).getSeed()));
+            completions.add(String.valueOf(Bukkit.getServer().getWorlds().getFirst().getSeed()));
         }
 
         return completions;
