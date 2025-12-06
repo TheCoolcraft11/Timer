@@ -7,6 +7,7 @@ import java.util.Objects;
 public final class Timer extends JavaPlugin {
     private TimerManager timerManager;
     private TimerTask timerTask;
+    private MultiTimerManager multiTimerManager;
 
     @Override
     public void onEnable() {
@@ -14,8 +15,9 @@ public final class Timer extends JavaPlugin {
         saveDefaultConfig();
 
         timerManager = new TimerManager(this);
-        
-        TimerCommand timerCommand = new TimerCommand(this, timerManager);
+        multiTimerManager = new MultiTimerManager(this, timerManager);
+
+        TimerCommand timerCommand = new TimerCommand(this, timerManager, multiTimerManager);
         Objects.requireNonNull(getCommand("timer")).setExecutor(timerCommand);
         Objects.requireNonNull(getCommand("timer")).setTabCompleter(timerCommand);
 
@@ -25,8 +27,8 @@ public final class Timer extends JavaPlugin {
 
 
         
-        timerTask = new TimerTask(timerManager);
-        timerTask.runTaskTimer(this, 0L, 1L); 
+        timerTask = new TimerTask(timerManager, multiTimerManager);
+        timerTask.runTaskTimer(this, 0L, 1L);
 
         getLogger().info("Timer plugin has been enabled!");
     }
@@ -38,7 +40,11 @@ public final class Timer extends JavaPlugin {
             timerManager.saveToConfig();
         }
 
-        
+        if (multiTimerManager != null) {
+            multiTimerManager.saveToConfig();
+        }
+
+
         if (timerTask != null) {
             timerTask.cancel();
         }
@@ -48,5 +54,9 @@ public final class Timer extends JavaPlugin {
 
     public TimerManager getTimerManager() {
         return timerManager;
+    }
+
+    public MultiTimerManager getMultiTimerManager() {
+        return multiTimerManager;
     }
 }

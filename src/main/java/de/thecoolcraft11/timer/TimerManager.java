@@ -26,6 +26,9 @@ public class TimerManager {
 
     
     private boolean showActionbar;
+    private long maxTime;
+    private boolean showMaxTime;
+    private String maxTargetCommand;
 
     public TimerManager(Timer plugin) {
         this.plugin = plugin;
@@ -42,6 +45,9 @@ public class TimerManager {
         this.animationStartTick = 0;
         this.animationDurationTicks = 10; 
         this.showActionbar = true; 
+        this.maxTime = 0;
+        this.showMaxTime = false;
+        this.maxTargetCommand = null;
         loadFromConfig();
     }
 
@@ -49,13 +55,16 @@ public class TimerManager {
         FileConfiguration config = plugin.getConfig();
         this.currentTime = config.getLong("timer.current-time", 0);
         this.countingUp = config.getBoolean("timer.counting-up", true);
-        this.animationDurationTicks = config.getInt("timer.animation.set-animation-duration", 10);
+        this.animationDurationTicks = config.getInt("timer.animation.duration-ticks", 10);
         this.animationSpeed = config.getDouble("timer.animation.speed", 1.0);
         this.showActionbar = config.getBoolean("timer.show-actionbar", true);
+        this.maxTime = config.getLong("timer.max-time", 0);
+        this.showMaxTime = config.getBoolean("timer.show-max-time", false);
+        this.maxTargetCommand = config.getString("timer.max-target-command", null);
 
         
         if (this.animationDurationTicks <= 0) {
-            this.animationDurationTicks = 1; 
+            this.animationDurationTicks = 1;
         }
 
         
@@ -82,6 +91,9 @@ public class TimerManager {
         config.set("timer.current-time", currentTime);
         config.set("timer.counting-up", countingUp);
         config.set("timer.show-actionbar", showActionbar);
+        config.set("timer.max-time", maxTime);
+        config.set("timer.show-max-time", showMaxTime);
+        config.set("timer.max-target-command", maxTargetCommand);
 
         
         config.set("timer.targets", null); 
@@ -136,6 +148,18 @@ public class TimerManager {
 
         if (countingUp) {
             currentTime++;
+            
+            if (maxTime > 0 && currentTime >= maxTime) {
+                currentTime = maxTime;
+                running = false;
+                
+                if (maxTargetCommand != null && !maxTargetCommand.isEmpty()) {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), maxTargetCommand);
+                        plugin.getLogger().info("Executed max time target command: " + maxTargetCommand);
+                    });
+                }
+            }
             checkTargets();
         } else {
             
@@ -152,7 +176,7 @@ public class TimerManager {
         for (TimerTarget target : targets.values()) {
             if (target.isExecuted()) continue;
 
-            
+
             boolean shouldExecute = (currentTime == target.getTime());
 
             if (shouldExecute) {
@@ -174,7 +198,12 @@ public class TimerManager {
     public Component getDisplayText() {
         String timeStr = formatTime(currentTime);
 
-        
+        if (showMaxTime && maxTime > 0) {
+            String maxTimeStr = formatTime(maxTime);
+            timeStr = timeStr + " / " + maxTimeStr;
+        }
+
+
         return applyColorAnimation(timeStr);
     }
 
@@ -211,7 +240,7 @@ public class TimerManager {
 
     private Component createWaveAnimation(String timeStr, String color1, String color2) {
         Component result = Component.empty();
-        
+
         
         double phase = animationFrame * animationSpeed * 0.5;
         int length = timeStr.length();
@@ -420,6 +449,41 @@ public class TimerManager {
         if (speed < 0.1) {
             this.animationSpeed = 0.1;
         } else this.animationSpeed = Math.min(speed, 10.0);
+    }
+
+    public void setAnimationDurationTicks(int ticks) {
+        if (ticks < 1) {
+            this.animationDurationTicks = 1;
+        } else this.animationDurationTicks = Math.min(ticks, 100);
+    }
+
+    public long getMaxTime() {
+        return maxTime;
+    }
+
+    public void setMaxTime(long seconds) {
+        this.maxTime = seconds;
+        resetAllTargets();
+    }
+
+    public boolean isMaxTimeVisible() {
+        return showMaxTime;
+    }
+
+    public void setMaxTimeVisible(boolean visible) {
+        this.showMaxTime = visible;
+    }
+
+    public String getMaxTargetCommand() {
+        return maxTargetCommand;
+    }
+
+    public void setMaxTarget(String command) {
+        this.maxTargetCommand = command;
+    }
+
+    public void removeMaxTarget() {
+        this.maxTargetCommand = null;
     }
 }
 
