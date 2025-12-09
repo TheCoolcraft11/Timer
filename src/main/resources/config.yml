@@ -52,22 +52,30 @@ timer:
   # Multiple targets can be configured
   # Each target has an ID, time (in seconds), and optional command
   targets:
-    # Example target configurations (commented out by default):
-    # warning1:
-    #   time: 300
-    #   command: say 5 minutes remaining!
-    # warning2:
-    #   time: 60
-    #   command: say 1 minute remaining!
-    # end:
-    #   time: 0
-    #   command: say Time's up!
+  # Example target configurations (commented out by default):
+  # warning1:
+  #   time: 300
+  #   command: say 5 minutes remaining!
+  # warning2:
+  #   time: 60
+  #   command: say 1 minute remaining!
+  # end:
+  #   time: 0
+  #   command: say Time's up!
 
   # Max time target - execute command when max time is reached
   max-target-command: null
 
+# Configure world reset behavior
+reset:
+  # List every world folder that should be deleted when /reset runs
+  # Default covers the vanilla trio; add custom worlds here if needed
+  worlds-to-delete:
+    - world
+    - world_nether
+    - world_the_end
+
 # Multi-timers section - stores all custom timers
 # Automatically managed by the plugin via commands
 # Do not edit manually unless you know what you're doing
-multi-timers: {}
-
+multi-timers: { }

@@ -2,16 +2,18 @@ package de.thecoolcraft11.timer;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.List;
 import java.util.Objects;
 
 public final class Timer extends JavaPlugin {
     private TimerManager timerManager;
     private TimerTask timerTask;
     private MultiTimerManager multiTimerManager;
+    private List<String> worldsToDeleteOnReset;
 
     @Override
     public void onEnable() {
-        
+
         saveDefaultConfig();
 
         timerManager = new TimerManager(this);
@@ -25,8 +27,8 @@ public final class Timer extends JavaPlugin {
         Objects.requireNonNull(getCommand("reset")).setExecutor(resetCommand);
         Objects.requireNonNull(getCommand("reset")).setTabCompleter(resetCommand);
 
+        reloadResetConfig();
 
-        
         timerTask = new TimerTask(timerManager, multiTimerManager);
         timerTask.runTaskTimer(this, 0L, 1L);
 
@@ -35,7 +37,7 @@ public final class Timer extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        
+
         if (timerManager != null) {
             timerManager.saveToConfig();
         }
@@ -58,5 +60,16 @@ public final class Timer extends JavaPlugin {
 
     public MultiTimerManager getMultiTimerManager() {
         return multiTimerManager;
+    }
+
+    public void reloadResetConfig() {
+        this.worldsToDeleteOnReset = getConfig().getStringList("reset.worlds-to-delete");
+        if (this.worldsToDeleteOnReset.isEmpty()) {
+            this.worldsToDeleteOnReset = List.of("world", "world_nether", "world_the_end");
+        }
+    }
+
+    public List<String> getWorldsToDeleteOnReset() {
+        return worldsToDeleteOnReset;
     }
 }

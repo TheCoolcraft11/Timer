@@ -10,34 +10,34 @@ import java.util.Map;
 public class TimerInstance {
     private final String name;
     private final MultiTimerManager.TimerType type;
-    private final String targetId; 
+    private final String targetId;
     private long currentTime;
     private boolean running;
     private boolean countingUp;
-    private long lastTickTime; 
-    private boolean visible; 
-    private boolean showName; 
+    private long lastTickTime;
+    private boolean visible;
+    private boolean showName;
 
-    
-    private String animationType; 
+
+    private String animationType;
     private String color1;
     private String color2;
     private double animationSpeed;
     private long animationFrame;
-    private int animationDurationTicks; 
+    private int animationDurationTicks;
 
-    
+
     private boolean isAnimatingTime;
     private long animationStartTime;
     private long animationTargetTime;
     private long animationStartTick;
 
-    
+
     private long maxTime;
     private boolean showMaxTime;
     private String maxTargetCommand;
 
-    
+
     private final Map<String, TimerTarget> targets;
 
     public TimerInstance(String name, MultiTimerManager.TimerType type, String targetId) {
@@ -48,67 +48,67 @@ public class TimerInstance {
         this.running = false;
         this.countingUp = true;
         this.lastTickTime = System.currentTimeMillis();
-        this.visible = true; 
-        this.showName = true; 
+        this.visible = true;
+        this.showName = true;
 
-        
+
         this.animationType = "gradient";
         this.color1 = "#00FF00";
         this.color2 = "#0080FF";
         this.animationSpeed = 1.0;
         this.animationFrame = 0;
-        this.animationDurationTicks = 10; 
+        this.animationDurationTicks = 10;
 
-        
+
         this.isAnimatingTime = false;
         this.animationStartTime = 0;
         this.animationTargetTime = 0;
         this.animationStartTick = 0;
 
-        
+
         this.maxTime = 0;
         this.showMaxTime = false;
         this.maxTargetCommand = null;
 
-        
+
         this.targets = new HashMap<>();
     }
 
     public void tick() {
-        
+
         animationFrame++;
 
-        
+
         if (isAnimatingTime) {
             long ticksElapsed = animationFrame - animationStartTick;
             long ticksDuration = animationDurationTicks;
 
             if (ticksElapsed >= ticksDuration) {
-                
+
                 currentTime = animationTargetTime;
                 isAnimatingTime = false;
             } else {
-                
+
                 double progress = (double) ticksElapsed / ticksDuration;
                 long timeDiff = animationTargetTime - animationStartTime;
-                currentTime = animationStartTime + (long)(timeDiff * progress);
+                currentTime = animationStartTime + (long) (timeDiff * progress);
             }
         }
 
         if (!running) return;
 
         long currentMillis = System.currentTimeMillis();
-        if (currentMillis - lastTickTime >= 1000) { 
+        if (currentMillis - lastTickTime >= 1000) {
             lastTickTime = currentMillis;
 
             if (countingUp) {
                 currentTime++;
 
-                
+
                 if (maxTime > 0 && currentTime >= maxTime) {
                     currentTime = maxTime;
                     running = false;
-                    
+
                 }
 
                 checkTargets();
@@ -129,7 +129,7 @@ public class TimerInstance {
 
             if (currentTime == target.getTime()) {
                 target.setExecuted(true);
-                
+
             }
         }
     }
@@ -149,7 +149,7 @@ public class TimerInstance {
     public Component getDisplayComponent() {
         String timeStr = formatTime();
 
-        
+
         if (showMaxTime && maxTime > 0) {
             String maxTimeStr = formatTime(maxTime);
             timeStr = timeStr + " / " + maxTimeStr;
@@ -278,17 +278,29 @@ public class TimerInstance {
         float r, g, b;
 
         if (h < 1.0f / 6) {
-            r = c; g = x; b = 0;
+            r = c;
+            g = x;
+            b = 0;
         } else if (h < 2.0f / 6) {
-            r = x; g = c; b = 0;
+            r = x;
+            g = c;
+            b = 0;
         } else if (h < 3.0f / 6) {
-            r = 0; g = c; b = x;
+            r = 0;
+            g = c;
+            b = x;
         } else if (h < 4.0f / 6) {
-            r = 0; g = x; b = c;
+            r = 0;
+            g = x;
+            b = c;
         } else if (h < 5.0f / 6) {
-            r = x; g = 0; b = c;
+            r = x;
+            g = 0;
+            b = c;
         } else {
-            r = c; g = 0; b = x;
+            r = c;
+            g = 0;
+            b = x;
         }
 
         int red = (int) ((r + m) * 255);
@@ -298,7 +310,7 @@ public class TimerInstance {
         return String.format("#%02X%02X%02X", red, green, blue);
     }
 
-    
+
     public String getName() {
         return name;
     }
@@ -377,7 +389,7 @@ public class TimerInstance {
         this.showName = showName;
     }
 
-    
+
     public String getAnimationType() {
         return animationType;
     }
@@ -418,7 +430,7 @@ public class TimerInstance {
         this.animationDurationTicks = durationTicks;
     }
 
-    
+
     public void animateToTime(long targetSeconds) {
         isAnimatingTime = true;
         animationStartTime = currentTime;
@@ -441,7 +453,7 @@ public class TimerInstance {
         return animationTargetTime;
     }
 
-    
+
     public long getMaxTime() {
         return maxTime;
     }
@@ -466,7 +478,7 @@ public class TimerInstance {
         this.maxTargetCommand = maxTargetCommand;
     }
 
-    
+
     public void addTarget(String id, long time, String command) {
         targets.put(id, new TimerTarget(id, time, command));
     }

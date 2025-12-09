@@ -24,10 +24,10 @@ public class TimerTask extends BukkitRunnable {
         timerManager.tick();
         multiTimerManager.tick();
 
-        
+
         for (TimerInstance timer : multiTimerManager.getAllTimers()) {
             if (timer.isRunning()) {
-                
+
                 for (TimerTarget target : timer.getAllTargets().values()) {
                     if (!target.isExecuted() && timer.getCurrentTime() == target.getTime()) {
                         executeCommand(target.getCommand());
@@ -35,12 +35,12 @@ public class TimerTask extends BukkitRunnable {
                     }
                 }
 
-                
+
                 if (timer.getMaxTime() > 0 && timer.getCurrentTime() >= timer.getMaxTime()) {
                     String maxCmd = timer.getMaxTargetCommand();
                     if (maxCmd != null && !maxCmd.isEmpty()) {
                         executeCommand(maxCmd);
-                        timer.setMaxTargetCommand(null); 
+                        timer.setMaxTargetCommand(null);
                     }
                 }
             }
@@ -50,12 +50,12 @@ public class TimerTask extends BukkitRunnable {
         for (Player player : Bukkit.getOnlinePlayers()) {
             Component displayText = Component.empty();
 
-            
+
             if (timerManager.isActionbarVisible()) {
                 displayText = timerManager.getDisplayText();
             }
 
-            
+
             List<TimerInstance> globalTimers = multiTimerManager.getGlobalTimers();
             for (TimerInstance timer : globalTimers) {
                 if (timer.isVisible()) {
@@ -66,7 +66,7 @@ public class TimerTask extends BukkitRunnable {
                 }
             }
 
-            
+
             List<TimerInstance> playerTimers = multiTimerManager.getTimersForPlayer(player);
             for (TimerInstance timer : playerTimers) {
                 if (timer.isVisible()) {
@@ -78,8 +78,17 @@ public class TimerTask extends BukkitRunnable {
             }
 
 
-            player.getScoreboard();
-            Team team = player.getScoreboard().getEntryTeam(player.getName());
+            Team team;
+
+
+            org.bukkit.scoreboard.Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+            team = mainScoreboard.getEntryTeam(player.getName());
+
+
+            if (team == null) {
+                team = player.getScoreboard().getEntryTeam(player.getName());
+            }
+
             if (team != null) {
                 List<TimerInstance> teamTimers = multiTimerManager.getTimersForTeam(team.getName());
                 for (TimerInstance timer : teamTimers) {

@@ -5,7 +5,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TimerManager {
     private final Timer plugin;
@@ -14,17 +16,17 @@ public class TimerManager {
     private boolean countingUp;
     private final Map<String, TimerTarget> targets;
     private long animationFrame;
-    private long tickCounter; 
-    private double animationSpeed; 
+    private long tickCounter;
+    private double animationSpeed;
 
-    
+
     private boolean isAnimatingTime;
     private long animationStartTime;
     private long animationTargetTime;
     private long animationStartTick;
-    private int animationDurationTicks; 
+    private int animationDurationTicks;
 
-    
+
     private boolean showActionbar;
     private long maxTime;
     private boolean showMaxTime;
@@ -43,8 +45,8 @@ public class TimerManager {
         this.animationStartTime = 0;
         this.animationTargetTime = 0;
         this.animationStartTick = 0;
-        this.animationDurationTicks = 10; 
-        this.showActionbar = true; 
+        this.animationDurationTicks = 10;
+        this.showActionbar = true;
         this.maxTime = 0;
         this.showMaxTime = false;
         this.maxTargetCommand = null;
@@ -62,19 +64,19 @@ public class TimerManager {
         this.showMaxTime = config.getBoolean("timer.show-max-time", false);
         this.maxTargetCommand = config.getString("timer.max-target-command", null);
 
-        
+
         if (this.animationDurationTicks <= 0) {
             this.animationDurationTicks = 1;
         }
 
-        
+
         if (this.animationSpeed < 0.1) {
             this.animationSpeed = 0.1;
         } else if (this.animationSpeed > 10.0) {
             this.animationSpeed = 10.0;
         }
 
-        
+
         targets.clear();
         ConfigurationSection targetsSection = config.getConfigurationSection("timer.targets");
         if (targetsSection != null) {
@@ -95,8 +97,8 @@ public class TimerManager {
         config.set("timer.show-max-time", showMaxTime);
         config.set("timer.max-target-command", maxTargetCommand);
 
-        
-        config.set("timer.targets", null); 
+
+        config.set("timer.targets", null);
         for (TimerTarget target : targets.values()) {
             config.set("timer.targets." + target.getId() + ".time", target.getTime());
             config.set("timer.targets." + target.getId() + ".command", target.getCommand());
@@ -119,40 +121,40 @@ public class TimerManager {
     }
 
     public void tick() {
-        
+
         animationFrame++;
         tickCounter++;
 
-        
+
         if (isAnimatingTime) {
             long ticksElapsed = animationFrame - animationStartTick;
 
             if (ticksElapsed >= animationDurationTicks) {
-                
+
                 currentTime = animationTargetTime;
                 isAnimatingTime = false;
             } else {
-                
+
                 float progress = (float) ticksElapsed / animationDurationTicks;
-                
+
                 float easedProgress = 1 - (float) Math.pow(1 - progress, 3);
-                currentTime = animationStartTime + (long)((animationTargetTime - animationStartTime) * easedProgress);
+                currentTime = animationStartTime + (long) ((animationTargetTime - animationStartTime) * easedProgress);
             }
-            return; 
+            return;
         }
 
         if (!running) return;
 
-        
+
         if (tickCounter % 20 != 0) return;
 
         if (countingUp) {
             currentTime++;
-            
+
             if (maxTime > 0 && currentTime >= maxTime) {
                 currentTime = maxTime;
                 running = false;
-                
+
                 if (maxTargetCommand != null && !maxTargetCommand.isEmpty()) {
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), maxTargetCommand);
@@ -162,7 +164,7 @@ public class TimerManager {
             }
             checkTargets();
         } else {
-            
+
             checkTargets();
             currentTime--;
             if (currentTime < 0) {
@@ -241,7 +243,7 @@ public class TimerManager {
     private Component createWaveAnimation(String timeStr, String color1, String color2) {
         Component result = Component.empty();
 
-        
+
         double phase = animationFrame * animationSpeed * 0.5;
         int length = timeStr.length();
 
@@ -257,7 +259,7 @@ public class TimerManager {
     }
 
     private Component createPulseAnimation(String timeStr, String color1, String color2) {
-        
+
         float pulse = (float) Math.sin(animationFrame * animationSpeed * 0.1) * 0.5f + 0.5f;
         String interpolatedColor = interpolateColor(color1, color2, pulse);
         return Component.text(timeStr)
@@ -268,12 +270,12 @@ public class TimerManager {
     private Component createRainbowAnimation(String timeStr) {
         Component result = Component.empty();
         int length = timeStr.length();
-        
-        
+
+
         double phase = (animationFrame * animationSpeed) % 360.0;
 
         for (int i = 0; i < length; i++) {
-            
+
             double hue = (i * 360.0 / length + phase);
             int wrappedHue = (int) (hue % 360.0);
             if (wrappedHue < 0) wrappedHue += 360;
@@ -315,17 +317,29 @@ public class TimerManager {
         float r, g, b;
 
         if (h < 1.0f / 6) {
-            r = c; g = x; b = 0;
+            r = c;
+            g = x;
+            b = 0;
         } else if (h < 2.0f / 6) {
-            r = x; g = c; b = 0;
+            r = x;
+            g = c;
+            b = 0;
         } else if (h < 3.0f / 6) {
-            r = 0; g = c; b = x;
+            r = 0;
+            g = c;
+            b = x;
         } else if (h < 4.0f / 6) {
-            r = 0; g = x; b = c;
+            r = 0;
+            g = x;
+            b = c;
         } else if (h < 5.0f / 6) {
-            r = x; g = 0; b = c;
+            r = x;
+            g = 0;
+            b = c;
         } else {
-            r = c; g = 0; b = x;
+            r = c;
+            g = 0;
+            b = x;
         }
 
         int red = (int) ((r + m) * 255);
@@ -403,7 +417,7 @@ public class TimerManager {
         }
     }
 
-    
+
     public void addTarget(String id, long time, String command) {
         targets.put(id, new TimerTarget(id, time, command));
     }
@@ -445,7 +459,7 @@ public class TimerManager {
     }
 
     public void setAnimationSpeed(double speed) {
-        
+
         if (speed < 0.1) {
             this.animationSpeed = 0.1;
         } else this.animationSpeed = Math.min(speed, 10.0);

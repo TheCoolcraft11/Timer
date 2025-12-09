@@ -9,7 +9,7 @@ import java.util.*;
 public class MultiTimerManager {
     private final Timer plugin;
     private final Map<String, TimerInstance> timers;
-    private final TimerManager globalTimer; 
+    private final TimerManager globalTimer;
 
     public MultiTimerManager(Timer plugin, TimerManager globalTimer) {
         this.plugin = plugin;
@@ -40,7 +40,7 @@ public class MultiTimerManager {
                 instance.setVisible(visible);
                 instance.setShowName(showName);
 
-                
+
                 String animType = timersSection.getString(timerName + ".animation.type", "gradient");
                 String color1 = timersSection.getString(timerName + ".animation.color1", "#00FF00");
                 String color2 = timersSection.getString(timerName + ".animation.color2", "#0080FF");
@@ -52,7 +52,7 @@ public class MultiTimerManager {
                 instance.setAnimationSpeed(animSpeed);
                 instance.setAnimationDurationTicks(animDuration);
 
-                
+
                 long maxTime = timersSection.getLong(timerName + ".max-time", 0);
                 boolean showMaxTime = timersSection.getBoolean(timerName + ".show-max-time", false);
                 String maxTargetCmd = timersSection.getString(timerName + ".max-target-command", null);
@@ -60,7 +60,7 @@ public class MultiTimerManager {
                 instance.setShowMaxTime(showMaxTime);
                 instance.setMaxTargetCommand(maxTargetCmd);
 
-                
+
                 ConfigurationSection targetsSection = timersSection.getConfigurationSection(timerName + ".targets");
                 if (targetsSection != null) {
                     for (String targetId2 : targetsSection.getKeys(false)) {
@@ -77,7 +77,7 @@ public class MultiTimerManager {
 
     public void saveToConfig() {
         FileConfiguration config = plugin.getConfig();
-        config.set("multi-timers", null); 
+        config.set("multi-timers", null);
 
         for (Map.Entry<String, TimerInstance> entry : timers.entrySet()) {
             String name = entry.getKey();
@@ -91,19 +91,19 @@ public class MultiTimerManager {
             config.set("multi-timers." + name + ".visible", instance.isVisible());
             config.set("multi-timers." + name + ".show-name", instance.isShowName());
 
-            
+
             config.set("multi-timers." + name + ".animation.type", instance.getAnimationType());
             config.set("multi-timers." + name + ".animation.color1", instance.getColor1());
             config.set("multi-timers." + name + ".animation.color2", instance.getColor2());
             config.set("multi-timers." + name + ".animation.speed", instance.getAnimationSpeed());
             config.set("multi-timers." + name + ".animation.duration-ticks", instance.getAnimationDurationTicks());
 
-            
+
             config.set("multi-timers." + name + ".max-time", instance.getMaxTime());
             config.set("multi-timers." + name + ".show-max-time", instance.isShowMaxTime());
             config.set("multi-timers." + name + ".max-target-command", instance.getMaxTargetCommand());
 
-            
+
             config.set("multi-timers." + name + ".targets", null);
             for (Map.Entry<String, TimerTarget> targetEntry : instance.getAllTargets().entrySet()) {
                 TimerTarget target = targetEntry.getValue();
@@ -117,7 +117,7 @@ public class MultiTimerManager {
 
     public boolean createTimer(String name, TimerType type, String targetId) {
         if (timers.containsKey(name)) {
-            return false; 
+            return false;
         }
 
         TimerInstance instance = new TimerInstance(name, type, targetId);
@@ -187,9 +187,9 @@ public class MultiTimerManager {
     }
 
     public enum TimerType {
-        GLOBAL,   
-        PLAYER,   
-        TEAM      
+        GLOBAL,
+        PLAYER,
+        TEAM
     }
 }
 

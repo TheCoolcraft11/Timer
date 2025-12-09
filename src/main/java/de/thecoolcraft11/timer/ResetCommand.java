@@ -2,12 +2,13 @@ package de.thecoolcraft11.timer;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.WorldCreator;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,30 +64,17 @@ public class ResetCommand implements CommandExecutor, TabCompleter {
 
         plugin.getLogger().info("Resetting world with seed: " + seed);
 
-        World overworld = Bukkit.getWorld("world");
-        World nether = Bukkit.getWorld("world_nether");
-        World end = Bukkit.getWorld("world_the_end");
-
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.kick(Component.text("Server is resetting the world...").color(NamedTextColor.YELLOW));
+        List<String> worldsToDelete = plugin.getWorldsToDeleteOnReset();
+        if (worldsToDelete == null || worldsToDelete.isEmpty()) {
+            worldsToDelete = List.of("world", "world_nether", "world_the_end");
         }
-
-
-        if (overworld != null) {
-            Bukkit.unloadWorld(overworld, false);
-        }
-        if (nether != null) {
-            Bukkit.unloadWorld(nether, false);
-        }
-        if (end != null) {
-            Bukkit.unloadWorld(end, false);
-        }
-
-
-        deleteWorld("world");
-        deleteWorld("world_nether");
-        deleteWorld("world_the_end");
+        worldsToDelete.forEach(worldName -> {
+            World world = Bukkit.getWorld(worldName);
+            if (world != null) {
+                Bukkit.unloadWorld(world, false);
+            }
+            deleteWorld(worldName);
+        });
 
 
         WorldCreator overworldCreator = new WorldCreator("world");
@@ -139,7 +127,7 @@ public class ResetCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String @NotNull [] args) {
         List<String> completions = new ArrayList<>();
 
-        if(!sender.hasPermission("timer.admin")) return completions;
+        if (!sender.hasPermission("timer.admin")) return completions;
 
         if (args.length == 1) {
 
@@ -150,4 +138,3 @@ public class ResetCommand implements CommandExecutor, TabCompleter {
         return completions;
     }
 }
-
