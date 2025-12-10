@@ -70,10 +70,27 @@ timer:
 reset:
   # List every world folder that should be deleted when /reset runs
   # Default covers the vanilla trio; add custom worlds here if needed
+  #
+  # Wildcard patterns are supported:
+  #   "*" - deletes all worlds
+  #   "world*" - deletes worlds starting with "world" (e.g., world, world_nether, world_the_end)
+  #   "*nether" - deletes worlds ending with "nether"
+  #   "*custom*" - deletes worlds containing "custom"
+  #   "lobby_*" - deletes worlds starting with "lobby_"
   worlds-to-delete:
     - world
     - world_nether
     - world_the_end
+
+  # Delete worlds on server boot (before world loading)
+  # WARNING: This will delete the specified worlds every time the server starts!
+  # Default: false (disabled for safety)
+  delete-on-boot: false
+
+  # Delete worlds on server shutdown (after all worlds are unloaded)
+  # WARNING: This will delete the specified worlds every time the server stops!
+  # Default: false (disabled for safety)
+  delete-on-shutdown: false
 
 # Multi-timers section - stores all custom timers
 # Automatically managed by the plugin via commands

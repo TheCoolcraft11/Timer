@@ -64,17 +64,7 @@ public class ResetCommand implements CommandExecutor, TabCompleter {
 
         plugin.getLogger().info("Resetting world with seed: " + seed);
 
-        List<String> worldsToDelete = plugin.getWorldsToDeleteOnReset();
-        if (worldsToDelete == null || worldsToDelete.isEmpty()) {
-            worldsToDelete = List.of("world", "world_nether", "world_the_end");
-        }
-        worldsToDelete.forEach(worldName -> {
-            World world = Bukkit.getWorld(worldName);
-            if (world != null) {
-                Bukkit.unloadWorld(world, false);
-            }
-            deleteWorld(worldName);
-        });
+        deleteConfiguredWorlds();
 
 
         WorldCreator overworldCreator = new WorldCreator("world");
@@ -98,6 +88,72 @@ public class ResetCommand implements CommandExecutor, TabCompleter {
 
 
         Bukkit.getScheduler().runTaskLater(plugin, Bukkit::restart, 20L);
+    }
+
+    public void deleteConfiguredWorlds() {
+        List<String> worldsToDelete = plugin.getWorldsToDeleteOnReset();
+        if (worldsToDelete == null || worldsToDelete.isEmpty()) {
+            worldsToDelete = List.of("world", "world_nether", "world_the_end");
+        }
+
+
+        File worldContainer = Bukkit.getWorldContainer();
+        File[] files = worldContainer.listFiles();
+        if (files == null) {
+            plugin.getLogger().warning("Could not list files in world container");
+            return;
+        }
+
+
+        List<String> allWorldNames = new ArrayList<>();
+        for (File file : files) {
+            if (file.isDirectory() && isWorldFolder(file)) {
+                allWorldNames.add(file.getName());
+            }
+        }
+
+
+        for (String pattern : worldsToDelete) {
+            if (pattern.contains("*")) {
+
+                plugin.getLogger().info("Processing wildcard pattern: " + pattern);
+                for (String worldName : allWorldNames) {
+                    if (matchesPattern(worldName, pattern)) {
+                        plugin.getLogger().info("Pattern '" + pattern + "' matches world: " + worldName);
+                        World world = Bukkit.getWorld(worldName);
+                        if (world != null) {
+                            Bukkit.unloadWorld(world, false);
+                        }
+                        deleteWorld(worldName);
+                    }
+                }
+            } else {
+
+                World world = Bukkit.getWorld(pattern);
+                if (world != null) {
+                    Bukkit.unloadWorld(world, false);
+                }
+                deleteWorld(pattern);
+            }
+        }
+    }
+
+    private boolean matchesPattern(String worldName, String pattern) {
+        if (pattern.equals("*")) {
+            return true;
+        }
+
+
+        String regex = pattern
+                .replace(".", "\\.")
+                .replace("*", ".*");
+
+        return worldName.matches(regex);
+    }
+
+    private boolean isWorldFolder(File folder) {
+        File levelDat = new File(folder, "level.dat");
+        return levelDat.exists() && levelDat.isFile();
     }
 
     private void deleteWorld(String worldName) {
