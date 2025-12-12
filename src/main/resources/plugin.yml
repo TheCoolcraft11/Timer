@@ -2,7 +2,7 @@ name: Timer
 version: '1.0-SNAPSHOT'
 main: de.thecoolcraft11.timer.Timer
 api-version: '1.21'
-authors: [ TheCoolcraft11 ]
+author: TheCoolcraft11
 description: A simple timer plugin
 website: https://github.com/TheCoolcraft11/Timer
 
