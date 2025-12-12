@@ -450,7 +450,7 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
                         try {
                             long setSeconds = parseTime(args[3]);
                             useTimer.animateToTime(setSeconds);
-                            sender.sendMessage(Component.text("Timer '" + useTimerName + "' animating to " + setSeconds + " seconds").color(NamedTextColor.GREEN));
+                            sender.sendMessage(Component.text("Timer '" + useTimerName + "' set to " + setSeconds + " seconds").color(NamedTextColor.GREEN));
                         } catch (IllegalArgumentException e) {
                             sender.sendMessage(Component.text("Invalid time format!").color(NamedTextColor.RED));
                         }
