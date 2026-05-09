@@ -1,13 +1,16 @@
 package de.thecoolcraft11.timer;
 
+import de.thecoolcraft11.timer.api.events.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Bukkit;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class TimerInstance {
+    private final Timer plugin;
     private final String name;
     private final MultiTimerManager.TimerType type;
     private final String targetId;
@@ -19,7 +22,7 @@ public class TimerInstance {
     private boolean showName;
 
 
-    private String animationType;
+    private AnimationType animationType;
     private String color1;
     private String color2;
     private double animationSpeed;
@@ -40,7 +43,11 @@ public class TimerInstance {
 
     private final Map<String, TimerTarget> targets;
 
-    public TimerInstance(String name, MultiTimerManager.TimerType type, String targetId) {
+
+    private final Map<String, IntegrationTarget> integrationTargets;
+
+    public TimerInstance(Timer plugin, String name, MultiTimerManager.TimerType type, String targetId) {
+        this.plugin = plugin;
         this.name = name;
         this.type = type;
         this.targetId = targetId;
@@ -52,7 +59,7 @@ public class TimerInstance {
         this.showName = true;
 
 
-        this.animationType = "gradient";
+        this.animationType = AnimationType.GRADIENT;
         this.color1 = "#00FF00";
         this.color2 = "#0080FF";
         this.animationSpeed = 1.0;
@@ -72,6 +79,7 @@ public class TimerInstance {
 
 
         this.targets = new HashMap<>();
+        this.integrationTargets = new HashMap<>();
     }
 
     public void tick() {
@@ -100,24 +108,53 @@ public class TimerInstance {
         long currentMillis = System.currentTimeMillis();
         if (currentMillis - lastTickTime >= 1000) {
             lastTickTime = currentMillis;
+            long previousTime = currentTime;
 
             if (countingUp) {
                 currentTime++;
 
 
+                TimerTickEvent tickEvent = new TimerTickEvent(this, false, previousTime, currentTime);
+                Bukkit.getPluginManager().callEvent(tickEvent);
+
                 if (maxTime > 0 && currentTime >= maxTime) {
                     currentTime = maxTime;
-                    running = false;
 
+
+                    TimerStopEvent stopEvent = new TimerStopEvent(this, false,
+                            TimerStopEvent.StopReason.MAX_TIME_REACHED);
+                    Bukkit.getPluginManager().callEvent(stopEvent);
+                    if (!stopEvent.isCancelled()) {
+                        running = false;
+                    }
+
+                    if (maxTargetCommand != null && !maxTargetCommand.isEmpty()) {
+                        org.bukkit.Bukkit.getScheduler().runTask(plugin,
+                                () -> org.bukkit.Bukkit.dispatchCommand(org.bukkit.Bukkit.getConsoleSender(),
+                                        maxTargetCommand));
+                    }
                 }
+
 
                 checkTargets();
             } else {
                 checkTargets();
                 currentTime--;
+
+
+                TimerTickEvent tickEvent = new TimerTickEvent(this, false, previousTime, currentTime);
+                Bukkit.getPluginManager().callEvent(tickEvent);
+
                 if (currentTime < 0) {
                     currentTime = 0;
-                    running = false;
+
+
+                    TimerStopEvent stopEvent = new TimerStopEvent(this, false,
+                            TimerStopEvent.StopReason.COUNTDOWN_COMPLETE);
+                    Bukkit.getPluginManager().callEvent(stopEvent);
+                    if (!stopEvent.isCancelled()) {
+                        running = false;
+                    }
                 }
             }
         }
@@ -128,8 +165,41 @@ public class TimerInstance {
             if (target.isExecuted()) continue;
 
             if (currentTime == target.getTime()) {
-                target.setExecuted(true);
 
+                TimerTargetExecuteEvent event = new TimerTargetExecuteEvent(this, false, target, currentTime);
+                Bukkit.getPluginManager().callEvent(event);
+
+                if (event.isCancelled()) {
+                    continue;
+                }
+
+
+                if (target.getCommand() != null && !target.getCommand().isEmpty()) {
+                    org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                        org.bukkit.Bukkit.dispatchCommand(org.bukkit.Bukkit.getConsoleSender(), target.getCommand());
+                        plugin.getLogger().info(
+                                "Executed timer-instance target '" + target.getId() + "': " + target.getCommand());
+                    });
+                }
+                target.setExecuted(true);
+            }
+        }
+
+
+        for (IntegrationTarget it : integrationTargets.values()) {
+            if (it.isExecuted()) continue;
+            if (currentTime == it.getTime()) {
+                org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                    try {
+                        it.getAction().run();
+                        plugin.getLogger().info(
+                                "Executed integration target '" + it.getId() + "' on instance '" + name + "'");
+                    } catch (Exception e) {
+                        plugin.getLogger().severe(
+                                "Error executing integration target '" + it.getId() + "' on instance '" + name + "': " + e.getMessage());
+                    }
+                });
+                it.setExecuted();
             }
         }
     }
@@ -181,11 +251,11 @@ public class TimerInstance {
     }
 
     private Component applyColorAnimation(String timeStr) {
-        return switch (animationType.toLowerCase()) {
-            case "wave" -> createWaveAnimation(timeStr, color1, color2);
-            case "pulse" -> createPulseAnimation(timeStr, color1, color2);
-            case "rainbow" -> createRainbowAnimation(timeStr);
-            case "still" -> Component.text(timeStr)
+        return switch (animationType) {
+            case WAVE -> createWaveAnimation(timeStr, color1, color2);
+            case PULSE -> createPulseAnimation(timeStr, color1, color2);
+            case RAINBOW -> createRainbowAnimation(timeStr);
+            case STILL -> Component.text(timeStr)
                     .color(net.kyori.adventure.text.format.TextColor.fromHexString(color1))
                     .decorate(TextDecoration.BOLD);
             default -> createGradientAnimation(timeStr, color1, color2);
@@ -351,26 +421,56 @@ public class TimerInstance {
     }
 
     public void start() {
+        TimerStartEvent event = new TimerStartEvent(this, false);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
         this.running = true;
         this.lastTickTime = System.currentTimeMillis();
     }
 
     public void stop() {
+        TimerStopEvent event = new TimerStopEvent(this, false, TimerStopEvent.StopReason.MANUAL);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
         this.running = false;
     }
 
     public void pause() {
+        TimerStopEvent event = new TimerStopEvent(this, false, TimerStopEvent.StopReason.MANUAL);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
         this.running = false;
     }
 
     public void resume() {
+        TimerStartEvent event = new TimerStartEvent(this, false);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
         this.running = true;
         this.lastTickTime = System.currentTimeMillis();
     }
 
     public void reset() {
+        TimerResetEvent event = new TimerResetEvent(this, false, currentTime);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
+
         this.currentTime = 0;
-        this.running = false;
+        if (running) {
+            TimerStopEvent stopEvent = new TimerStopEvent(this, false, TimerStopEvent.StopReason.RESET);
+            Bukkit.getPluginManager().callEvent(stopEvent);
+            this.running = false;
+        }
     }
 
     public boolean isVisible() {
@@ -390,12 +490,16 @@ public class TimerInstance {
     }
 
 
-    public String getAnimationType() {
+    public AnimationType getAnimationType() {
         return animationType;
     }
 
-    public void setAnimationType(String animationType) {
+    public void setAnimationType(AnimationType animationType) {
         this.animationType = animationType;
+    }
+
+    public void setAnimationType(String animationType) {
+        this.animationType = AnimationType.fromString(animationType);
     }
 
     public String getColor1() {
@@ -483,12 +587,25 @@ public class TimerInstance {
         targets.put(id, new TimerTarget(id, time, command));
     }
 
+    /**
+     * Add an integration-only target which will execute the provided Runnable when the timer
+     * reaches the specified time. Integration targets are not persisted and do not appear
+     * individually in the target list; instead a single synthetic entry is shown when any
+     * integration target exists.
+     */
+    public void addTarget(String id, long time, Runnable action) {
+        integrationTargets.put(id, new IntegrationTarget(id, time, action));
+    }
+
     public boolean removeTarget(String id) {
-        return targets.remove(id) != null;
+        boolean removed = targets.remove(id) != null;
+        if (!removed) removed = integrationTargets.remove(id) != null;
+        return removed;
     }
 
     public void clearAllTargets() {
         targets.clear();
+        integrationTargets.clear();
     }
 
     public TimerTarget getTarget(String id) {
@@ -496,13 +613,57 @@ public class TimerInstance {
     }
 
     public Map<String, TimerTarget> getAllTargets() {
-        return targets;
+
+
+        Map<String, TimerTarget> copy = new HashMap<>(targets);
+        if (!integrationTargets.isEmpty()) {
+            copy.put("integration-execution",
+                    new TimerTarget("integration-execution", 0, "Integration Execution is active"));
+        }
+        return copy;
     }
 
     public void resetAllTargets() {
-        for (TimerTarget target : targets.values()) {
-            target.reset();
+        for (TimerTarget t : targets.values()) t.reset();
+        for (IntegrationTarget it : integrationTargets.values()) it.reset();
+    }
+
+
+    private static class IntegrationTarget {
+        private final String id;
+        private final long time;
+        private final Runnable action;
+        private boolean executed;
+
+        IntegrationTarget(String id, long time, Runnable action) {
+            this.id = id;
+            this.time = time;
+            this.action = action;
+            this.executed = false;
+        }
+
+        String getId() {
+            return id;
+        }
+
+        long getTime() {
+            return time;
+        }
+
+        Runnable getAction() {
+            return action;
+        }
+
+        boolean isExecuted() {
+            return executed;
+        }
+
+        void setExecuted() {
+            this.executed = true;
+        }
+
+        void reset() {
+            this.executed = false;
         }
     }
 }
-

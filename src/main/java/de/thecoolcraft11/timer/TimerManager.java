@@ -1,13 +1,19 @@
 package de.thecoolcraft11.timer;
 
+import de.thecoolcraft11.timer.api.events.TimerResetEvent;
+import de.thecoolcraft11.timer.api.events.TimerStartEvent;
+import de.thecoolcraft11.timer.api.events.TimerStopEvent;
+import de.thecoolcraft11.timer.api.events.TimerTimeChangeEvent;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TimerManager {
     private final Timer plugin;
@@ -32,12 +38,16 @@ public class TimerManager {
     private boolean showMaxTime;
     private String maxTargetCommand;
 
+
+    private final Map<String, IntegrationTarget> integrationTargets;
+
     public TimerManager(Timer plugin) {
         this.plugin = plugin;
         this.running = false;
         this.countingUp = true;
         this.currentTime = 0;
-        this.targets = new HashMap<>();
+        this.targets = new ConcurrentHashMap<>();
+        this.integrationTargets = new ConcurrentHashMap<>();
         this.animationFrame = 0;
         this.tickCounter = 0;
         this.animationSpeed = 1.0;
@@ -148,12 +158,23 @@ public class TimerManager {
 
         if (tickCounter % 20 != 0) return;
 
+        long previousTime = currentTime;
+
         if (countingUp) {
             currentTime++;
 
+
+            de.thecoolcraft11.timer.api.events.TimerTickEvent tickEvent =
+                    new de.thecoolcraft11.timer.api.events.TimerTickEvent(null, true, previousTime, currentTime);
+            Bukkit.getPluginManager().callEvent(tickEvent);
+
             if (maxTime > 0 && currentTime >= maxTime) {
                 currentTime = maxTime;
-                running = false;
+                TimerStopEvent stopEvent = new TimerStopEvent(null, true, TimerStopEvent.StopReason.MAX_TIME_REACHED);
+                Bukkit.getPluginManager().callEvent(stopEvent);
+                if (!stopEvent.isCancelled()) {
+                    running = false;
+                }
 
                 if (maxTargetCommand != null && !maxTargetCommand.isEmpty()) {
                     Bukkit.getScheduler().runTask(plugin, () -> {
@@ -164,12 +185,21 @@ public class TimerManager {
             }
             checkTargets();
         } else {
-
             checkTargets();
             currentTime--;
+
+
+            de.thecoolcraft11.timer.api.events.TimerTickEvent tickEvent =
+                    new de.thecoolcraft11.timer.api.events.TimerTickEvent(null, true, previousTime, currentTime);
+            Bukkit.getPluginManager().callEvent(tickEvent);
+
             if (currentTime < 0) {
                 currentTime = 0;
-                running = false;
+                TimerStopEvent stopEvent = new TimerStopEvent(null, true, TimerStopEvent.StopReason.COUNTDOWN_COMPLETE);
+                Bukkit.getPluginManager().callEvent(stopEvent);
+                if (!stopEvent.isCancelled()) {
+                    running = false;
+                }
             }
         }
     }
@@ -186,13 +216,45 @@ public class TimerManager {
                 target.setExecuted(true);
             }
         }
+
+
+        for (IntegrationTarget it : integrationTargets.values()) {
+            if (it.isExecuted()) continue;
+            boolean shouldExecute = (currentTime == it.getTime());
+            if (shouldExecute) {
+                executeIntegrationTarget(it);
+                it.setExecuted();
+            }
+        }
     }
 
     private void executeTargetCommand(TimerTarget target) {
+        de.thecoolcraft11.timer.api.events.TimerTargetExecuteEvent event =
+                new de.thecoolcraft11.timer.api.events.TimerTargetExecuteEvent(null, true, target, currentTime);
+        Bukkit.getPluginManager().callEvent(event);
+
+        if (event.isCancelled()) {
+            return;
+        }
+
         if (target.getCommand() != null && !target.getCommand().isEmpty()) {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), target.getCommand());
                 plugin.getLogger().info("Executed target command '" + target.getId() + "': " + target.getCommand());
+            });
+        }
+    }
+
+    private void executeIntegrationTarget(IntegrationTarget it) {
+        if (it.getAction() != null) {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                try {
+                    it.getAction().run();
+                    plugin.getLogger().info("Executed integration target '" + it.getId() + "'");
+                } catch (Exception e) {
+                    plugin.getLogger().severe(
+                            "Error executing integration target '" + it.getId() + "': " + e.getMessage());
+                }
             });
         }
     }
@@ -210,15 +272,16 @@ public class TimerManager {
     }
 
     private Component applyColorAnimation(String timeStr) {
-        String animationType = plugin.getConfig().getString("timer.animation.type", "gradient");
+        AnimationType animationType = AnimationType.fromString(
+                plugin.getConfig().getString("timer.animation.type", "gradient"));
         String color1 = plugin.getConfig().getString("timer.animation.color1", "#00FF00");
         String color2 = plugin.getConfig().getString("timer.animation.color2", "#0080FF");
 
-        return switch (animationType.toLowerCase()) {
-            case "wave" -> createWaveAnimation(timeStr, color1, color2);
-            case "pulse" -> createPulseAnimation(timeStr, color1, color2);
-            case "rainbow" -> createRainbowAnimation(timeStr);
-            case "still" -> Component.text(timeStr)
+        return switch (animationType) {
+            case WAVE -> createWaveAnimation(timeStr, color1, color2);
+            case PULSE -> createPulseAnimation(timeStr, color1, color2);
+            case RAINBOW -> createRainbowAnimation(timeStr);
+            case STILL -> Component.text(timeStr)
                     .color(net.kyori.adventure.text.format.TextColor.fromHexString(color1))
                     .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD);
             default -> createGradientAnimation(timeStr, color1, color2);
@@ -362,30 +425,65 @@ public class TimerManager {
     }
 
     public void start() {
+        TimerStartEvent event = new TimerStartEvent(null, true);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
         running = true;
         resetAllTargets();
     }
 
     public void stop() {
+        TimerStopEvent event = new TimerStopEvent(null, true, TimerStopEvent.StopReason.MANUAL);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
         running = false;
     }
 
     public void pause() {
+        TimerStopEvent event = new TimerStopEvent(null, true, TimerStopEvent.StopReason.MANUAL);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
         running = false;
     }
 
     public void resume() {
+        TimerStartEvent event = new TimerStartEvent(null, true);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
         running = true;
     }
 
     public void reset() {
+        TimerResetEvent resetEvent = new TimerResetEvent(null, true, currentTime);
+        Bukkit.getPluginManager().callEvent(resetEvent);
+        if (resetEvent.isCancelled()) {
+            return;
+        }
+
         currentTime = 0;
-        running = false;
+        if (running) {
+            TimerStopEvent stopEvent = new TimerStopEvent(null, true, TimerStopEvent.StopReason.RESET);
+            Bukkit.getPluginManager().callEvent(stopEvent);
+            running = false;
+        }
         resetAllTargets();
     }
 
     public void setTime(long seconds) {
-        animateToTime(seconds);
+        TimerTimeChangeEvent event = new TimerTimeChangeEvent(null, true, currentTime, seconds);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
+        animateToTime(event.getNewTime());
     }
 
     public void setTimeInstant(long seconds) {
@@ -415,6 +513,10 @@ public class TimerManager {
         for (TimerTarget target : targets.values()) {
             target.reset();
         }
+
+        for (IntegrationTarget it : integrationTargets.values()) {
+            it.reset();
+        }
     }
 
 
@@ -422,12 +524,27 @@ public class TimerManager {
         targets.put(id, new TimerTarget(id, time, command));
     }
 
+    /**
+     * Add an integration-only target which will execute the provided Runnable when the timer
+     * reaches the specified time. Integration targets are not persisted and do not appear
+     * individually in the target list; instead a single synthetic entry is shown when any
+     * integration target exists.
+     */
+    public void addTarget(String id, long time, Runnable action) {
+        integrationTargets.put(id, new IntegrationTarget(id, time, action));
+    }
+
     public boolean removeTarget(String id) {
-        return targets.remove(id) != null;
+        boolean removed = targets.remove(id) != null;
+        if (!removed) {
+            removed = integrationTargets.remove(id) != null;
+        }
+        return removed;
     }
 
     public void clearAllTargets() {
         targets.clear();
+        integrationTargets.clear();
     }
 
     public TimerTarget getTarget(String id) {
@@ -435,11 +552,17 @@ public class TimerManager {
     }
 
     public Collection<TimerTarget> getAllTargets() {
-        return targets.values();
+
+
+        List<TimerTarget> combined = new ArrayList<>(targets.values());
+        if (!integrationTargets.isEmpty()) {
+            combined.add(new TimerTarget("integration-execution", 0, "Integration Execution is active"));
+        }
+        return combined;
     }
 
     public boolean hasNoTargets() {
-        return targets.isEmpty();
+        return targets.isEmpty() && integrationTargets.isEmpty();
     }
 
     public boolean isRunning() {
@@ -499,5 +622,43 @@ public class TimerManager {
     public void removeMaxTarget() {
         this.maxTargetCommand = null;
     }
-}
 
+
+    private static class IntegrationTarget {
+        private final String id;
+        private final long time;
+        private final Runnable action;
+        private boolean executed;
+
+        IntegrationTarget(String id, long time, Runnable action) {
+            this.id = id;
+            this.time = time;
+            this.action = action;
+            this.executed = false;
+        }
+
+        String getId() {
+            return id;
+        }
+
+        long getTime() {
+            return time;
+        }
+
+        Runnable getAction() {
+            return action;
+        }
+
+        boolean isExecuted() {
+            return executed;
+        }
+
+        void setExecuted() {
+            this.executed = true;
+        }
+
+        void reset() {
+            this.executed = false;
+        }
+    }
+}

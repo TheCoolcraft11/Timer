@@ -752,9 +752,10 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(Component.text("Invalid type! Use: gradient, wave, pulse, rainbow, or still").color(NamedTextColor.RED));
                     return;
                 }
-                timer.setAnimationType(type);
+                timer.setAnimationType(AnimationType.fromString(type));
                 sender.sendMessage(Component.text("Animation type set to: " + type).color(NamedTextColor.GREEN));
                 break;
+
             case "color1":
             case "color2":
                 if (args.length < 5) {
@@ -774,6 +775,7 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
                 }
                 sender.sendMessage(Component.text("Animation " + animSubCmd + " set to: " + hexColor).color(NamedTextColor.GREEN));
                 break;
+
             case "speed":
                 if (args.length < 5) {
                     sender.sendMessage(Component.text("Usage: /timer use " + timerName + " animation speed <multiplier>").color(NamedTextColor.RED));
@@ -791,6 +793,7 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(Component.text("Invalid number! Use a decimal like 1.0, 2.5, etc.").color(NamedTextColor.RED));
                 }
                 break;
+
             case "duration":
                 if (args.length < 5) {
                     sender.sendMessage(Component.text("Usage: /timer use " + timerName + " animation duration <ticks>").color(NamedTextColor.RED));
@@ -808,6 +811,7 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(Component.text("Invalid number! Use an integer like 10, 20, etc.").color(NamedTextColor.RED));
                 }
                 break;
+
             default:
                 sender.sendMessage(Component.text("Unknown animation option! Use: type, color1, color2, speed, or duration").color(NamedTextColor.RED));
                 break;
@@ -938,7 +942,7 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(Component.text("Visible: ").color(NamedTextColor.YELLOW).append(Component.text(timer.isVisible() ? "Yes" : "No").color(timer.isVisible() ? NamedTextColor.GREEN : NamedTextColor.GRAY)));
         sender.sendMessage(Component.text("Show Name: ").color(NamedTextColor.YELLOW).append(Component.text(timer.isShowName() ? "Yes" : "No").color(timer.isShowName() ? NamedTextColor.GREEN : NamedTextColor.GRAY)));
 
-        sender.sendMessage(Component.text("Animation: ").color(NamedTextColor.YELLOW).append(Component.text(timer.getAnimationType()).color(NamedTextColor.WHITE)));
+        sender.sendMessage(Component.text("Animation: ").color(NamedTextColor.YELLOW).append(Component.text(timer.getAnimationType().toString()).color(NamedTextColor.WHITE)));
         sender.sendMessage(Component.text("  Color 1: ").color(NamedTextColor.GRAY).append(Component.text(timer.getColor1()).color(NamedTextColor.WHITE)));
         sender.sendMessage(Component.text("  Color 2: ").color(NamedTextColor.GRAY).append(Component.text(timer.getColor2()).color(NamedTextColor.WHITE)));
         sender.sendMessage(Component.text("  Speed: ").color(NamedTextColor.GRAY).append(Component.text(timer.getAnimationSpeed() + "x").color(NamedTextColor.WHITE)));

@@ -1,10 +1,17 @@
 package de.thecoolcraft11.timer;
 
+import de.thecoolcraft11.timer.api.events.TimerCreateEvent;
+import de.thecoolcraft11.timer.api.events.TimerDeleteEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MultiTimerManager {
     private final Timer plugin;
@@ -14,7 +21,7 @@ public class MultiTimerManager {
     public MultiTimerManager(Timer plugin, TimerManager globalTimer) {
         this.plugin = plugin;
         this.globalTimer = globalTimer;
-        this.timers = new HashMap<>();
+        this.timers = new ConcurrentHashMap<>();
         loadFromConfig();
     }
 
@@ -33,7 +40,7 @@ public class MultiTimerManager {
                 boolean visible = timersSection.getBoolean(timerName + ".visible", true);
                 boolean showName = timersSection.getBoolean(timerName + ".show-name", true);
 
-                TimerInstance instance = new TimerInstance(timerName, TimerType.valueOf(type), targetId);
+                TimerInstance instance = new TimerInstance(plugin, timerName, TimerType.valueOf(type), targetId);
                 instance.setCurrentTime(currentTime);
                 instance.setRunning(running);
                 instance.setCountingUp(countingUp);
@@ -64,8 +71,8 @@ public class MultiTimerManager {
                 ConfigurationSection targetsSection = timersSection.getConfigurationSection(timerName + ".targets");
                 if (targetsSection != null) {
                     for (String targetId2 : targetsSection.getKeys(false)) {
-                        long targetTime = targetsSection.getLong(targetId + ".time");
-                        String targetCommand = targetsSection.getString(targetId + ".command");
+                        long targetTime = targetsSection.getLong(targetId2 + ".time");
+                        String targetCommand = targetsSection.getString(targetId2 + ".command");
                         instance.addTarget(targetId2, targetTime, targetCommand);
                     }
                 }
@@ -91,8 +98,7 @@ public class MultiTimerManager {
             config.set("multi-timers." + name + ".visible", instance.isVisible());
             config.set("multi-timers." + name + ".show-name", instance.isShowName());
 
-
-            config.set("multi-timers." + name + ".animation.type", instance.getAnimationType());
+            config.set("multi-timers." + name + ".animation.type", instance.getAnimationType().toString());
             config.set("multi-timers." + name + ".animation.color1", instance.getColor1());
             config.set("multi-timers." + name + ".animation.color2", instance.getColor2());
             config.set("multi-timers." + name + ".animation.speed", instance.getAnimationSpeed());
@@ -105,10 +111,11 @@ public class MultiTimerManager {
 
 
             config.set("multi-timers." + name + ".targets", null);
-            for (Map.Entry<String, TimerTarget> targetEntry : instance.getAllTargets().entrySet()) {
-                TimerTarget target = targetEntry.getValue();
-                config.set("multi-timers." + name + ".targets." + target.getId() + ".time", target.getTime());
-                config.set("multi-timers." + name + ".targets." + target.getId() + ".command", target.getCommand());
+            for (Map.Entry<String, TimerTarget> t : instance.getAllTargets().entrySet()) {
+
+                if ("integration-execution".equals(t.getKey())) continue;
+                config.set("multi-timers." + name + ".targets." + t.getKey() + ".time", t.getValue().getTime());
+                config.set("multi-timers." + name + ".targets." + t.getKey() + ".command", t.getValue().getCommand());
             }
         }
 
@@ -120,14 +127,27 @@ public class MultiTimerManager {
             return false;
         }
 
-        TimerInstance instance = new TimerInstance(name, type, targetId);
+        TimerInstance instance = new TimerInstance(plugin, name, type, targetId);
         timers.put(name, instance);
+
+
+        TimerCreateEvent event = new TimerCreateEvent(instance, name, type, targetId);
+        Bukkit.getPluginManager().callEvent(event);
+
         saveToConfig();
         return true;
     }
 
     public boolean deleteTimer(String name) {
-        if (timers.remove(name) != null) {
+        TimerInstance instance = timers.get(name);
+        if (instance != null) {
+            long finalTime = instance.getCurrentTime();
+
+
+            TimerDeleteEvent event = new TimerDeleteEvent(name, finalTime);
+            Bukkit.getPluginManager().callEvent(event);
+
+            timers.remove(name);
             saveToConfig();
             return true;
         }
@@ -191,5 +211,18 @@ public class MultiTimerManager {
         PLAYER,
         TEAM
     }
-}
 
+
+    public boolean addIntegrationTarget(String timerName, String id, long time, Runnable action) {
+        TimerInstance instance = timers.get(timerName);
+        if (instance == null) return false;
+        instance.addTarget(id, time, action);
+        return true;
+    }
+
+    public boolean removeIntegrationTarget(String timerName, String id) {
+        TimerInstance instance = timers.get(timerName);
+        if (instance == null) return false;
+        return instance.removeTarget(id);
+    }
+}
