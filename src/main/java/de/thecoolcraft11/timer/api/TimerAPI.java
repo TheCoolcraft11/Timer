@@ -6,6 +6,7 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Main API interface for external plugins to interact with the Timer plugin.
@@ -292,6 +293,53 @@ public class TimerAPI {
      */
     public Plugin getPlugin() {
         return plugin;
+    }
+
+    /**
+     * Reset the world immediately using a random seed.
+     * Kicks all players and restarts the server to regenerate the worlds.
+     * The worlds are deleted during the next startup before they are loaded.
+     *
+     * <p>Must be called from the main thread.</p>
+     *
+     * @return true if the reset was prepared
+     */
+    public boolean resetWorld() {
+        return resetWorld(ThreadLocalRandom.current().nextLong());
+    }
+
+    /**
+     * Reset the world immediately with a specific seed.
+     * Kicks all players and restarts the server to regenerate the worlds.
+     * The worlds are deleted during the next startup before they are loaded.
+     *
+     * <p>Will refuse (return false) if custom seeds are disallowed by the
+     * 'reset.disallow-custom-seed' config option.</p>
+     *
+     * <p>Must be called from the main thread.</p>
+     *
+     * @param seed the seed to regenerate the worlds with
+     * @return true if the reset was prepared, false if refused
+     */
+    public boolean resetWorld(long seed) {
+        if (plugin.isCustomSeedDisallowed()) {
+            plugin.getLogger().warning(
+                    "Custom world reset seed requested via API, but custom seeds are disallowed by config.");
+            return false;
+        }
+
+        plugin.prepareWorldReset(seed);
+        return true;
+    }
+
+    /**
+     * Check whether a world reset is currently pending (prepared but the server has not
+     * restarted yet).
+     *
+     * @return true if a world reset is pending
+     */
+    public boolean isWorldResetPending() {
+        return plugin.isPendingWorldReset();
     }
 
 

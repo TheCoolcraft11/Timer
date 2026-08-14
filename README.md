@@ -7,7 +7,7 @@
 - Savable Timer
 - Maximum Time Display (00:10 / 00:15)
 - Perfect for Minigames or Challanges
-- Reset Command that can reset (DELETE!!) worlds via command or on boot / shutdown
+- Reset Command that can reset (DELETE!!) worlds via command or on boot
 
 ## How to use
 
@@ -36,4 +36,5 @@
 9. Change config entries for reset command in the `config.yml` file.
 
 - Change `worlds-to-delete` to delete more worlds on reset (Supports **_*_** Wildcard)
-- Change `delete-on-boot` or `delete-on-shutdown` to delete worlds on boot or shutdown
+- Change `delete-on-boot` to delete worlds on every server boot
+- Change `reset-on-player-death` to instantly trigger a reset on a player death

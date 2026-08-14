@@ -2,7 +2,24 @@ package de.thecoolcraft11.timer;
 
 import org.jspecify.annotations.NonNull;
 
+import java.io.IOException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
 public class TimerUtil {
+
+    private static final List<String> WORLD_SUBFOLDERS = List.of(
+            "data",
+            "data/minecraft",
+            "datapacks",
+            "playerdata",
+            "stats",
+            "advancements"
+    );
 
     public static String interpolateColor(String color1, String color2, float ratio) {
         int r1 = Integer.parseInt(color1.substring(1, 3), 16);
@@ -75,5 +92,96 @@ public class TimerUtil {
         int blue = (int) ((b + m) * 255);
 
         return String.format("#%02X%02X%02X", red, green, blue);
+    }
+
+    public static boolean isWorldFolder(Path folder) {
+        return Files.isDirectory(folder) && Files.isRegularFile(folder.resolve("level.dat"));
+    }
+
+    public static Set<String> resolveWorldFolders(Path worldContainer, List<String> patterns) {
+        List<String> existingWorlds = new ArrayList<>();
+
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(worldContainer)) {
+            for (Path path : stream) {
+                if (isWorldFolder(path)) {
+                    existingWorlds.add(path.getFileName().toString());
+                }
+            }
+        } catch (IOException e) {
+            return new LinkedHashSet<>();
+        }
+
+        Set<String> resolved = new LinkedHashSet<>();
+        for (String pattern : patterns) {
+            if (pattern.contains("*")) {
+                for (String worldName : existingWorlds) {
+                    if (matchesPattern(worldName, pattern)) {
+                        resolved.add(worldName);
+                    }
+                }
+            } else {
+                resolved.add(pattern);
+            }
+        }
+        return resolved;
+    }
+
+    public static boolean matchesPattern(String worldName, String pattern) {
+        if (pattern.equals("*")) {
+            return true;
+        }
+
+        String regex = pattern
+                .replace(".", "\\.")
+                .replace("*", ".*");
+
+        return worldName.matches(regex);
+    }
+
+    public static boolean deleteWorldFolder(Path worldContainer, String worldName) {
+        Path folder = worldContainer.resolve(worldName);
+        if (Files.exists(folder) && !deleteDirectory(folder)) {
+            return false;
+        }
+
+        
+        
+        
+        
+        try {
+            Files.createDirectories(folder);
+            for (String subfolder : WORLD_SUBFOLDERS) {
+                Files.createDirectories(folder.resolve(subfolder));
+            }
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    public static boolean deleteDirectory(Path directory) {
+        try {
+            Files.walkFileTree(directory, new SimpleFileVisitor<>() {
+                @Override
+                public @NonNull FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs) throws IOException {
+                    Files.deleteIfExists(file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public @NonNull FileVisitResult postVisitDirectory(@NonNull Path dir, IOException exc) throws IOException {
+                    if (exc != null) {
+                        throw exc;
+                    }
+
+                    Files.deleteIfExists(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
     }
 }

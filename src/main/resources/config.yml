@@ -67,7 +67,18 @@ timer:
   max-target-command: null
 
 # Configure world reset behavior
+# NOTE: /reset restarts the server. Worlds are deleted during the next startup
+# (before they are loaded) and regenerated with the configured/new seed.
 reset:
+  # Disallow specifying a custom seed via /reset <seed>
+  # When true, /reset always uses a random seed
+  # Default: true (for safety)
+  disallow-custom-seed: true
+
+  # Hide the seed that is being used from the /reset broadcast
+  # Default: true
+  hide-seed: true
+
   # List every world folder that should be deleted when /reset runs
   # Default covers the vanilla trio; add custom worlds here if needed
   #
@@ -87,10 +98,9 @@ reset:
   # Default: false (disabled for safety)
   delete-on-boot: false
 
-  # Delete worlds on server shutdown (after all worlds are unloaded)
-  # WARNING: This will delete the specified worlds every time the server stops!
-  # Default: false (disabled for safety)
-  delete-on-shutdown: false
+  # Reset the world instantly when a player dies
+  # Default: false (disabled)
+  reset-on-player-death: false
 
 # Multi-timers section - stores all custom timers
 # Automatically managed by the plugin via commands
