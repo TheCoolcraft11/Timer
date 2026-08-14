@@ -5,6 +5,8 @@ import de.thecoolcraft11.timer.api.events.WorldResetEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
@@ -20,11 +22,13 @@ import java.util.logging.Level;
 public final class Timer extends JavaPlugin {
     private static final String PENDING_RESET_FILE = "pending-reset.properties";
     private static final String PENDING_RESET_SEED_KEY = "seed";
+    private static final String DATA_FILE = "data.yml";
 
     private TimerManager timerManager;
     private TimerTask timerTask;
     private MultiTimerManager multiTimerManager;
     private TimerAPI api;
+    private FileConfiguration dataConfig;
     private List<String> worldsToDeleteOnReset;
     private boolean deleteOnBoot;
     private boolean disallowCustomSeed;
@@ -71,6 +75,7 @@ public final class Timer extends JavaPlugin {
     public void onEnable() {
 
         saveDefaultConfig();
+        loadDataConfig();
 
         timerManager = new TimerManager(this);
         multiTimerManager = new MultiTimerManager(this, timerManager);
@@ -242,6 +247,51 @@ public final class Timer extends JavaPlugin {
      */
     public TimerAPI getAPI() {
         return api;
+    }
+
+    /**
+     * Load the data file holding all plugin-generated runtime state.
+     * This file is written by the plugin and never contains admin settings.
+     */
+    private void loadDataConfig() {
+        Path dataFile = getDataFolder().toPath().resolve(DATA_FILE);
+        dataConfig = YamlConfiguration.loadConfiguration(dataFile.toFile());
+        dataConfig.options().header(
+                "Runtime data automatically managed by the Timer plugin. Do not edit manually.\n"
+                        + "config.yml holds your settings; this file holds plugin-generated state "
+                        + "(timer values, targets, animation overrides, multi-timers).");
+    }
+
+    /**
+     * Get the FileConfiguration backing the plugin's runtime data file.
+     *
+     * @return the data config (data.yml)
+     */
+    public FileConfiguration getDataConfig() {
+        return dataConfig;
+    }
+
+    /**
+     * Save the plugin's runtime data to the data file on disk.
+     */
+    public void saveDataConfig() {
+        if (dataConfig == null) {
+            return;
+        }
+        Path dataFile = getDataFolder().toPath().resolve(DATA_FILE);
+        try {
+            Files.createDirectories(dataFile.getParent());
+            dataConfig.save(dataFile.toFile());
+        } catch (IOException e) {
+            getLogger().log(Level.SEVERE, "Could not save " + DATA_FILE + "!", e);
+        }
+    }
+
+    /**
+     * Reload the plugin's runtime data file from disk.
+     */
+    public void reloadDataConfig() {
+        loadDataConfig();
     }
 
     public void reloadResetConfig() {

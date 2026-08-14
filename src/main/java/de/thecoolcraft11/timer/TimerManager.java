@@ -26,6 +26,9 @@ public class TimerManager {
     private long animationFrame;
     private long tickCounter;
     private double animationSpeed;
+    private AnimationType animationType;
+    private String color1;
+    private String color2;
 
 
     private boolean isAnimatingTime;
@@ -53,6 +56,9 @@ public class TimerManager {
         this.animationFrame = 0;
         this.tickCounter = 0;
         this.animationSpeed = 1.0;
+        this.animationType = AnimationType.GRADIENT;
+        this.color1 = "#00FF00";
+        this.color2 = "#0080FF";
         this.isAnimatingTime = false;
         this.animationStartTime = 0;
         this.animationTargetTime = 0;
@@ -66,21 +72,32 @@ public class TimerManager {
     }
 
     public void loadFromConfig() {
+        FileConfiguration data = plugin.getDataConfig();
         FileConfiguration config = plugin.getConfig();
-        this.currentTime = config.getLong("timer.current-time", 0);
-        this.countingUp = config.getBoolean("timer.counting-up", true);
-        this.animationDurationTicks = config.getInt("timer.animation.duration-ticks", 10);
-        this.animationSpeed = config.getDouble("timer.animation.speed", 1.0);
-        this.showActionbar = config.getBoolean("timer.show-actionbar", true);
-        this.maxTime = config.getLong("timer.max-time", 0);
-        this.showMaxTime = config.getBoolean("timer.show-max-time", false);
-        this.maxTargetCommand = config.getString("timer.max-target-command", null);
 
+        this.currentTime = data.getLong("timer.current-time", config.getLong("timer.current-time", 0));
+        this.countingUp = data.getBoolean("timer.counting-up", config.getBoolean("timer.counting-up", true));
+        this.animationDurationTicks = data.getInt("timer.animation.duration-ticks",
+                config.getInt("timer.animation.duration-ticks", 10));
+        this.animationSpeed = data.getDouble("timer.animation.speed",
+                config.getDouble("timer.animation.speed", 1.0));
+        this.animationType = AnimationType.fromString(data.getString("timer.animation.type",
+                config.getString("timer.animation.type", "gradient")));
+        this.color1 = data.getString("timer.animation.color1",
+                config.getString("timer.animation.color1", "#00FF00"));
+        this.color2 = data.getString("timer.animation.color2",
+                config.getString("timer.animation.color2", "#0080FF"));
+        this.showActionbar = data.getBoolean("timer.show-actionbar",
+                config.getBoolean("timer.show-actionbar", true));
+        this.maxTime = data.getLong("timer.max-time", config.getLong("timer.max-time", 0));
+        this.showMaxTime = data.getBoolean("timer.show-max-time",
+                config.getBoolean("timer.show-max-time", false));
+        this.maxTargetCommand = data.getString("timer.max-target-command",
+                config.getString("timer.max-target-command", null));
 
         if (this.animationDurationTicks <= 0) {
             this.animationDurationTicks = 1;
         }
-
 
         if (this.animationSpeed < 0.1) {
             this.animationSpeed = 0.1;
@@ -88,9 +105,12 @@ public class TimerManager {
             this.animationSpeed = 10.0;
         }
 
-
         targets.clear();
-        ConfigurationSection targetsSection = config.getConfigurationSection("timer.targets");
+        ConfigurationSection targetsSection = data.getConfigurationSection("timer.targets");
+        if ((targetsSection == null || targetsSection.getKeys(false).isEmpty())
+                && config.isConfigurationSection("timer.targets")) {
+            targetsSection = config.getConfigurationSection("timer.targets");
+        }
         if (targetsSection != null) {
             for (String key : targetsSection.getKeys(false)) {
                 long time = targetsSection.getLong(key + ".time");
@@ -101,21 +121,26 @@ public class TimerManager {
     }
 
     public void saveToConfig() {
-        FileConfiguration config = plugin.getConfig();
-        config.set("timer.current-time", currentTime);
-        config.set("timer.counting-up", countingUp);
-        config.set("timer.show-actionbar", showActionbar);
-        config.set("timer.max-time", maxTime);
-        config.set("timer.show-max-time", showMaxTime);
-        config.set("timer.max-target-command", maxTargetCommand);
+        FileConfiguration data = plugin.getDataConfig();
+        data.set("timer.current-time", currentTime);
+        data.set("timer.counting-up", countingUp);
+        data.set("timer.show-actionbar", showActionbar);
+        data.set("timer.max-time", maxTime);
+        data.set("timer.show-max-time", showMaxTime);
+        data.set("timer.max-target-command", maxTargetCommand);
 
+        data.set("timer.animation.type", animationType.name().toLowerCase());
+        data.set("timer.animation.color1", color1);
+        data.set("timer.animation.color2", color2);
+        data.set("timer.animation.speed", animationSpeed);
+        data.set("timer.animation.duration-ticks", animationDurationTicks);
 
-        config.set("timer.targets", null);
+        data.set("timer.targets", null);
         for (TimerTarget target : targets.values()) {
-            config.set("timer.targets." + target.getId() + ".time", target.getTime());
-            config.set("timer.targets." + target.getId() + ".command", target.getCommand());
+            data.set("timer.targets." + target.getId() + ".time", target.getTime());
+            data.set("timer.targets." + target.getId() + ".command", target.getCommand());
         }
-        plugin.saveConfig();
+        plugin.saveDataConfig();
     }
 
     /**
@@ -274,19 +299,18 @@ public class TimerManager {
     }
 
     private Component applyColorAnimation(String timeStr) {
-        AnimationType animationType = AnimationType.fromString(
-                plugin.getConfig().getString("timer.animation.type", "gradient"));
-        String color1 = plugin.getConfig().getString("timer.animation.color1", "#00FF00");
-        String color2 = plugin.getConfig().getString("timer.animation.color2", "#0080FF");
+        AnimationType type = animationType;
+        String primaryColor = color1;
+        String secondaryColor = color2;
 
-        return switch (animationType) {
-            case WAVE -> createWaveAnimation(timeStr, color1, color2);
-            case PULSE -> createPulseAnimation(timeStr, color1, color2);
+        return switch (type) {
+            case WAVE -> createWaveAnimation(timeStr, primaryColor, secondaryColor);
+            case PULSE -> createPulseAnimation(timeStr, primaryColor, secondaryColor);
             case RAINBOW -> createRainbowAnimation(timeStr);
             case STILL -> Component.text(timeStr)
-                    .color(net.kyori.adventure.text.format.TextColor.fromHexString(color1))
+                    .color(net.kyori.adventure.text.format.TextColor.fromHexString(primaryColor))
                     .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD);
-            default -> createGradientAnimation(timeStr, color1, color2);
+            default -> createGradientAnimation(timeStr, primaryColor, secondaryColor);
         };
     }
 
@@ -510,6 +534,30 @@ public class TimerManager {
 
     public double getAnimationSpeed() {
         return animationSpeed;
+    }
+
+    public void setAnimationType(String type) {
+        this.animationType = AnimationType.fromString(type);
+    }
+
+    public AnimationType getAnimationType() {
+        return animationType;
+    }
+
+    public void setColor1(String color) {
+        this.color1 = color;
+    }
+
+    public String getColor1() {
+        return color1;
+    }
+
+    public void setColor2(String color) {
+        this.color2 = color;
+    }
+
+    public String getColor2() {
+        return color2;
     }
 
     public void setAnimationSpeed(double speed) {

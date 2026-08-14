@@ -208,7 +208,11 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
                 break;
 
             case "reload":
+                plugin.reloadConfig();
+                plugin.reloadDataConfig();
                 timerManager.loadFromConfig();
+                multiTimerManager.loadFromConfig();
+                plugin.reloadResetConfig();
                 sender.sendMessage(Component.text("Timer configuration reloaded!").color(NamedTextColor.GREEN));
                 break;
 
@@ -235,8 +239,8 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
                             sender.sendMessage(Component.text("Invalid type! Use: gradient, wave, pulse, rainbow, or still").color(NamedTextColor.RED));
                             return true;
                         }
-                        plugin.getConfig().set("timer.animation.type", type);
-                        plugin.saveConfig();
+                        timerManager.setAnimationType(type);
+                        timerManager.saveToConfig();
                         sender.sendMessage(Component.text("Animation type set to: " + type).color(NamedTextColor.GREEN));
                         break;
 
@@ -253,8 +257,12 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
                             sender.sendMessage(Component.text("Invalid color! Use hex (#FF0000) or name (red)").color(NamedTextColor.RED));
                             return true;
                         }
-                        plugin.getConfig().set("timer.animation." + args[1], hexColor);
-                        plugin.saveConfig();
+                        if (args[1].equalsIgnoreCase("color1")) {
+                            timerManager.setColor1(hexColor);
+                        } else {
+                            timerManager.setColor2(hexColor);
+                        }
+                        timerManager.saveToConfig();
                         sender.sendMessage(Component.text("Animation " + args[1] + " set to: " + hexColor).color(NamedTextColor.GREEN));
                         break;
 
@@ -272,8 +280,7 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
                                 return true;
                             }
                             timerManager.setAnimationSpeed(speed);
-                            plugin.getConfig().set("timer.animation.speed", speed);
-                            plugin.saveConfig();
+                            timerManager.saveToConfig();
                             sender.sendMessage(Component.text("Animation speed set to: " + speed + "x").color(NamedTextColor.GREEN));
                         } catch (NumberFormatException e) {
                             sender.sendMessage(Component.text("Invalid number! Use a decimal like 1.0, 2.5, etc.").color(NamedTextColor.RED));
@@ -294,8 +301,7 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
                                 return true;
                             }
                             timerManager.setAnimationDurationTicks(duration);
-                            plugin.getConfig().set("timer.animation.duration-ticks", duration);
-                            plugin.saveConfig();
+                            timerManager.saveToConfig();
                             sender.sendMessage(Component.text("Animation duration set to: " + duration + " ticks").color(NamedTextColor.GREEN));
                         } catch (NumberFormatException e) {
                             sender.sendMessage(Component.text("Invalid number! Use an integer like 10, 20, etc.").color(NamedTextColor.RED));

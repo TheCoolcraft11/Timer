@@ -1,8 +1,10 @@
 # Timer Plugin Configuration
-# This file is automatically updated when timer state changes
 # Those settings here can be changed either manually here or via commands
+# (command changes are persisted to data.yml)
 
 timer:
+  # Default values used at startup. Runtime values (including changes made
+  # via commands) are persisted in data.yml and override these when present.
   # Current timer value in seconds
   current-time: 0
 
@@ -101,8 +103,3 @@ reset:
   # Reset the world instantly when a player dies
   # Default: false (disabled)
   reset-on-player-death: false
-
-# Multi-timers section - stores all custom timers
-# Automatically managed by the plugin via commands
-# Do not edit manually unless you know what you're doing
-multi-timers: { }

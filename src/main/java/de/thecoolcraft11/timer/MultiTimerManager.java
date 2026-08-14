@@ -26,10 +26,15 @@ public class MultiTimerManager {
     }
 
     public void loadFromConfig() {
+        FileConfiguration data = plugin.getDataConfig();
         FileConfiguration config = plugin.getConfig();
         timers.clear();
 
-        ConfigurationSection timersSection = config.getConfigurationSection("multi-timers");
+        ConfigurationSection timersSection = data.getConfigurationSection("multi-timers");
+        if ((timersSection == null || timersSection.getKeys(false).isEmpty())
+                && config.isConfigurationSection("multi-timers")) {
+            timersSection = config.getConfigurationSection("multi-timers");
+        }
         if (timersSection != null) {
             for (String timerName : timersSection.getKeys(false)) {
                 String type = timersSection.getString(timerName + ".type", "GLOBAL");
@@ -83,43 +88,41 @@ public class MultiTimerManager {
     }
 
     public void saveToConfig() {
-        FileConfiguration config = plugin.getConfig();
-        config.set("multi-timers", null);
+        FileConfiguration data = plugin.getDataConfig();
+        data.set("multi-timers", null);
 
         for (Map.Entry<String, TimerInstance> entry : timers.entrySet()) {
             String name = entry.getKey();
             TimerInstance instance = entry.getValue();
 
-            config.set("multi-timers." + name + ".type", instance.getType().name());
-            config.set("multi-timers." + name + ".target-id", instance.getTargetId());
-            config.set("multi-timers." + name + ".current-time", instance.getCurrentTime());
-            config.set("multi-timers." + name + ".running", instance.isRunning());
-            config.set("multi-timers." + name + ".counting-up", instance.isCountingUp());
-            config.set("multi-timers." + name + ".visible", instance.isVisible());
-            config.set("multi-timers." + name + ".show-name", instance.isShowName());
+            data.set("multi-timers." + name + ".type", instance.getType().name());
+            data.set("multi-timers." + name + ".target-id", instance.getTargetId());
+            data.set("multi-timers." + name + ".current-time", instance.getCurrentTime());
+            data.set("multi-timers." + name + ".running", instance.isRunning());
+            data.set("multi-timers." + name + ".counting-up", instance.isCountingUp());
+            data.set("multi-timers." + name + ".visible", instance.isVisible());
+            data.set("multi-timers." + name + ".show-name", instance.isShowName());
 
-            config.set("multi-timers." + name + ".animation.type", instance.getAnimationType().toString());
-            config.set("multi-timers." + name + ".animation.color1", instance.getColor1());
-            config.set("multi-timers." + name + ".animation.color2", instance.getColor2());
-            config.set("multi-timers." + name + ".animation.speed", instance.getAnimationSpeed());
-            config.set("multi-timers." + name + ".animation.duration-ticks", instance.getAnimationDurationTicks());
+            data.set("multi-timers." + name + ".animation.type", instance.getAnimationType().toString());
+            data.set("multi-timers." + name + ".animation.color1", instance.getColor1());
+            data.set("multi-timers." + name + ".animation.color2", instance.getColor2());
+            data.set("multi-timers." + name + ".animation.speed", instance.getAnimationSpeed());
+            data.set("multi-timers." + name + ".animation.duration-ticks", instance.getAnimationDurationTicks());
 
+            data.set("multi-timers." + name + ".max-time", instance.getMaxTime());
+            data.set("multi-timers." + name + ".show-max-time", instance.isShowMaxTime());
+            data.set("multi-timers." + name + ".max-target-command", instance.getMaxTargetCommand());
 
-            config.set("multi-timers." + name + ".max-time", instance.getMaxTime());
-            config.set("multi-timers." + name + ".show-max-time", instance.isShowMaxTime());
-            config.set("multi-timers." + name + ".max-target-command", instance.getMaxTargetCommand());
-
-
-            config.set("multi-timers." + name + ".targets", null);
+            data.set("multi-timers." + name + ".targets", null);
             for (Map.Entry<String, TimerTarget> t : instance.getAllTargets().entrySet()) {
 
                 if ("integration-execution".equals(t.getKey())) continue;
-                config.set("multi-timers." + name + ".targets." + t.getKey() + ".time", t.getValue().getTime());
-                config.set("multi-timers." + name + ".targets." + t.getKey() + ".command", t.getValue().getCommand());
+                data.set("multi-timers." + name + ".targets." + t.getKey() + ".time", t.getValue().getTime());
+                data.set("multi-timers." + name + ".targets." + t.getKey() + ".command", t.getValue().getCommand());
             }
         }
 
-        plugin.saveConfig();
+        plugin.saveDataConfig();
     }
 
     public boolean createTimer(String name, TimerType type, String targetId) {
