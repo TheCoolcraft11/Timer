@@ -710,11 +710,7 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(Component.text("Targets: ").color(NamedTextColor.YELLOW)
                     .append(Component.text(timerManager.getAllTargets().size() + " configured").color(NamedTextColor.WHITE)));
             for (TimerTarget target : timerManager.getAllTargets()) {
-                String status = target.isExecuted() ? " [EXECUTED]" : "";
-                sender.sendMessage(Component.text("  • " + target.getId() + ": ").color(NamedTextColor.GRAY)
-                        .append(Component.text(target.getTime() + "s").color(NamedTextColor.WHITE))
-                        .append(Component.text(target.getCommand() != null ? " → " + target.getCommand() : "").color(NamedTextColor.DARK_GRAY))
-                        .append(Component.text(status).color(NamedTextColor.DARK_GRAY)));
+                sendExecuted(sender, target);
             }
         }
 
@@ -732,6 +728,14 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(Component.text("Max Time Target: ").color(NamedTextColor.YELLOW)
                     .append(Component.text(maxTarget).color(NamedTextColor.WHITE)));
         }
+    }
+
+    private void sendExecuted(CommandSender sender, TimerTarget target) {
+        String status = target.isExecuted() ? " [EXECUTED]" : "";
+        sender.sendMessage(Component.text("  • " + target.getId() + ": ").color(NamedTextColor.GRAY)
+                .append(Component.text(target.getTime() + "s").color(NamedTextColor.WHITE))
+                .append(Component.text(target.getCommand() != null ? " → " + target.getCommand() : "").color(NamedTextColor.DARK_GRAY))
+                .append(Component.text(status).color(NamedTextColor.DARK_GRAY)));
     }
 
     private void handleAnimationCommand(CommandSender sender, TimerInstance timer, String timerName, String[] args) {
@@ -915,11 +919,7 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
                 } else {
                     sender.sendMessage(Component.text("Targets for '" + timerName + "':").color(NamedTextColor.GOLD));
                     for (TimerTarget target : timer.getAllTargets().values()) {
-                        String status = target.isExecuted() ? " [EXECUTED]" : "";
-                        sender.sendMessage(Component.text("  • " + target.getId() + ": ").color(NamedTextColor.GRAY)
-                                .append(Component.text(target.getTime() + "s").color(NamedTextColor.WHITE))
-                                .append(Component.text(target.getCommand() != null ? " → " + target.getCommand() : "").color(NamedTextColor.DARK_GRAY))
-                                .append(Component.text(status).color(NamedTextColor.DARK_GRAY)));
+                        sendExecuted(sender, target);
                     }
                 }
                 break;
@@ -955,11 +955,7 @@ public class TimerCommand implements CommandExecutor, TabCompleter {
         } else {
             sender.sendMessage(Component.text("Targets: " + timer.getAllTargets().size()).color(NamedTextColor.YELLOW));
             for (TimerTarget target : timer.getAllTargets().values()) {
-                String status = target.isExecuted() ? " [EXECUTED]" : "";
-                sender.sendMessage(Component.text("  • " + target.getId() + ": ").color(NamedTextColor.GRAY)
-                        .append(Component.text(target.getTime() + "s").color(NamedTextColor.WHITE))
-                        .append(Component.text(target.getCommand() != null ? " → " + target.getCommand() : "").color(NamedTextColor.DARK_GRAY))
-                        .append(Component.text(status).color(NamedTextColor.DARK_GRAY)));
+                sendExecuted(sender, target);
             }
         }
     }

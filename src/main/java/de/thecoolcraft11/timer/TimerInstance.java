@@ -9,6 +9,9 @@ import org.bukkit.Bukkit;
 import java.util.HashMap;
 import java.util.Map;
 
+import static de.thecoolcraft11.timer.TimerUtil.hslToHex;
+import static de.thecoolcraft11.timer.TimerUtil.interpolateColor;
+
 public class TimerInstance {
     private final Timer plugin;
     private final String name;
@@ -205,23 +208,16 @@ public class TimerInstance {
     }
 
     public String formatTime() {
-        long hours = currentTime / 3600;
-        long minutes = (currentTime % 3600) / 60;
-        long seconds = currentTime % 60;
-
-        if (hours > 0) {
-            return String.format("%02d:%02d:%02d", hours, minutes, seconds);
-        } else {
-            return String.format("%02d:%02d", minutes, seconds);
-        }
+        return TimerUtil.formatTime(currentTime);
     }
+
 
     public Component getDisplayComponent() {
         String timeStr = formatTime();
 
 
         if (showMaxTime && maxTime > 0) {
-            String maxTimeStr = formatTime(maxTime);
+            String maxTimeStr = TimerUtil.formatTime(maxTime);
             timeStr = timeStr + " / " + maxTimeStr;
         }
 
@@ -238,17 +234,6 @@ public class TimerInstance {
         }
     }
 
-    private String formatTime(long seconds) {
-        long hours = seconds / 3600;
-        long minutes = (seconds % 3600) / 60;
-        long secs = seconds % 60;
-
-        if (hours > 0) {
-            return String.format("%02d:%02d:%02d", hours, minutes, secs);
-        } else {
-            return String.format("%02d:%02d", minutes, secs);
-        }
-    }
 
     private Component applyColorAnimation(String timeStr) {
         return switch (animationType) {
@@ -319,67 +304,6 @@ public class TimerInstance {
 
         return result;
     }
-
-    private String interpolateColor(String color1, String color2, float ratio) {
-        int r1 = Integer.parseInt(color1.substring(1, 3), 16);
-        int g1 = Integer.parseInt(color1.substring(3, 5), 16);
-        int b1 = Integer.parseInt(color1.substring(5, 7), 16);
-
-        int r2 = Integer.parseInt(color2.substring(1, 3), 16);
-        int g2 = Integer.parseInt(color2.substring(3, 5), 16);
-        int b2 = Integer.parseInt(color2.substring(5, 7), 16);
-
-        int r = (int) (r1 + (r2 - r1) * ratio);
-        int g = (int) (g1 + (g2 - g1) * ratio);
-        int b = (int) (b1 + (b2 - b1) * ratio);
-
-        return String.format("#%02X%02X%02X", r, g, b);
-    }
-
-    private String hslToHex(int hue) {
-        float h = hue / 360.0f;
-        float s = 100 / 100.0f;
-        float l = 50 / 100.0f;
-
-        float c = (1 - Math.abs(2 * l - 1)) * s;
-        float x = c * (1 - Math.abs((h * 6) % 2 - 1));
-        float m = l - c / 2;
-
-        float r, g, b;
-
-        if (h < 1.0f / 6) {
-            r = c;
-            g = x;
-            b = 0;
-        } else if (h < 2.0f / 6) {
-            r = x;
-            g = c;
-            b = 0;
-        } else if (h < 3.0f / 6) {
-            r = 0;
-            g = c;
-            b = x;
-        } else if (h < 4.0f / 6) {
-            r = 0;
-            g = x;
-            b = c;
-        } else if (h < 5.0f / 6) {
-            r = x;
-            g = 0;
-            b = c;
-        } else {
-            r = c;
-            g = 0;
-            b = x;
-        }
-
-        int red = (int) ((r + m) * 255);
-        int green = (int) ((g + m) * 255);
-        int blue = (int) ((b + m) * 255);
-
-        return String.format("#%02X%02X%02X", red, green, blue);
-    }
-
 
     public String getName() {
         return name;
@@ -587,12 +511,6 @@ public class TimerInstance {
         targets.put(id, new TimerTarget(id, time, command));
     }
 
-    /**
-     * Add an integration-only target which will execute the provided Runnable when the timer
-     * reaches the specified time. Integration targets are not persisted and do not appear
-     * individually in the target list; instead a single synthetic entry is shown when any
-     * integration target exists.
-     */
     public void addTarget(String id, long time, Runnable action) {
         integrationTargets.put(id, new IntegrationTarget(id, time, action));
     }

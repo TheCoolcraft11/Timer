@@ -20,7 +20,7 @@ import de.thecoolcraft11.timer.TimerInstance;
  *    .id("custom-action")
  *    .time(120)
  *    .action(() -> {
- *        
+ *
  *        Bukkit.broadcastMessage("Two minutes!");
  *    })
  *    .build();
@@ -113,7 +113,6 @@ public class TargetBuilder {
                 api.addGlobalTimerTarget(id, time, command);
             }
             api.getGlobalTimerManager().saveToConfig();
-            return true;
         } else {
             TimerInstance timer = api.getTimer(timerName);
             if (timer == null) {
@@ -126,7 +125,7 @@ public class TargetBuilder {
                 timer.addTarget(id, time, command);
             }
             api.getMultiTimerManager().saveToConfig();
-            return true;
         }
+        return true;
     }
 }
