@@ -72,6 +72,13 @@ timer:
 # NOTE: /reset restarts the server. Worlds are deleted during the next startup
 # (before they are loaded) and regenerated with the configured/new seed.
 reset:
+  # Disable all world reset features entirely.
+  # When false, the /reset command is not registered, reset events are not
+  # listened to, delete-on-boot / reset-on-player-death are ignored, and
+  # API world resets are refused.
+  # Default: true
+  enabled: true
+
   # Disallow specifying a custom seed via /reset <seed>
   # When true, /reset always uses a random seed
   # Default: true (for safety)

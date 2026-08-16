@@ -35,6 +35,7 @@
 
 9. Change config entries for reset command in the `config.yml` file.
 
+- Change `enabled` to `false` to disable all reset features (the `/reset` command is not registered and API world resets are refused)
 - Change `worlds-to-delete` to delete more worlds on reset (Supports **_*_** Wildcard)
 - Change `delete-on-boot` to delete worlds on every server boot
 - Change `reset-on-player-death` to instantly trigger a reset on a player death

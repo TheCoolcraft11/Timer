@@ -5,8 +5,10 @@ import de.thecoolcraft11.timer.api.events.WorldResetEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
@@ -34,6 +36,7 @@ public final class Timer extends JavaPlugin {
     private boolean disallowCustomSeed;
     private boolean hideSeed;
     private boolean resetOnPlayerDeath;
+    private boolean resetEnabled;
 
     @Override
     public void onLoad() {
@@ -41,6 +44,14 @@ public final class Timer extends JavaPlugin {
         reloadResetConfig();
 
         Path resetFile = getDataFolder().toPath().resolve(PENDING_RESET_FILE);
+
+        if (!isResetEnabled()) {
+            if (Files.exists(resetFile)) {
+                getLogger().warning(
+                        "Pending world reset detected, but reset features are disabled. The pending reset will not be applied.");
+            }
+            return;
+        }
 
         if (Files.exists(resetFile)) {
             getLogger().warning("Pending world reset detected!");
@@ -85,11 +96,16 @@ public final class Timer extends JavaPlugin {
         Objects.requireNonNull(getCommand("timer")).setExecutor(timerCommand);
         Objects.requireNonNull(getCommand("timer")).setTabCompleter(timerCommand);
 
-        ResetCommand resetCommand = new ResetCommand(this);
-        Objects.requireNonNull(getCommand("reset")).setExecutor(resetCommand);
-        Objects.requireNonNull(getCommand("reset")).setTabCompleter(resetCommand);
+        if (isResetEnabled()) {
+            ResetCommand resetCommand = new ResetCommand(this);
+            Objects.requireNonNull(getCommand("reset")).setExecutor(resetCommand);
+            Objects.requireNonNull(getCommand("reset")).setTabCompleter(resetCommand);
 
-        getServer().getPluginManager().registerEvents(new ResetListener(this), this);
+            getServer().getPluginManager().registerEvents(new ResetListener(this), this);
+        } else {
+            unregisterResetCommand();
+            getLogger().info("Reset features are disabled in the config; /reset command was not registered.");
+        }
 
         reloadResetConfig();
 
@@ -119,6 +135,10 @@ public final class Timer extends JavaPlugin {
     }
 
     public void prepareWorldReset(long seed) {
+        if (!isResetEnabled()) {
+            getLogger().warning("World reset requested, but reset features are disabled in the config.");
+            return;
+        }
 
         WorldResetEvent event = new WorldResetEvent(seed);
         Bukkit.getPluginManager().callEvent(event);
@@ -157,12 +177,29 @@ public final class Timer extends JavaPlugin {
     }
 
     public void scheduleWorldReset(int delayTicks) {
+        if (!isResetEnabled()) {
+            getLogger().warning("World reset requested, but reset features are disabled in the config.");
+            return;
+        }
         long seed = ThreadLocalRandom.current().nextLong();
         Bukkit.getScheduler().runTaskLater(this, () -> prepareWorldReset(seed), delayTicks);
     }
 
     public boolean isPendingWorldReset() {
-        return Files.exists(getDataFolder().toPath().resolve(PENDING_RESET_FILE));
+        return isResetEnabled() && Files.exists(getDataFolder().toPath().resolve(PENDING_RESET_FILE));
+    }
+
+    private void unregisterResetCommand() {
+        Command resetCommand = getCommand("reset");
+        if (resetCommand != null) {
+            resetCommand.unregister(getServer().getCommandMap());
+
+            getServer().getCommandMap().getKnownCommands().remove("reset");
+
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                p.updateCommands();
+            }
+        }
     }
 
     private void savePendingReset(long seed) throws IOException {
@@ -240,40 +277,23 @@ public final class Timer extends JavaPlugin {
         return multiTimerManager;
     }
 
-    /**
-     * Get the Timer API for external plugin integration.
-     *
-     * @return the TimerAPI instance
-     */
     public TimerAPI getAPI() {
         return api;
     }
 
-    /**
-     * Load the data file holding all plugin-generated runtime state.
-     * This file is written by the plugin and never contains admin settings.
-     */
     private void loadDataConfig() {
         Path dataFile = getDataFolder().toPath().resolve(DATA_FILE);
         dataConfig = YamlConfiguration.loadConfiguration(dataFile.toFile());
-        dataConfig.options().header(
-                "Runtime data automatically managed by the Timer plugin. Do not edit manually.\n"
-                        + "config.yml holds your settings; this file holds plugin-generated state "
-                        + "(timer values, targets, animation overrides, multi-timers).");
+        dataConfig.options().setHeader(List.of(
+                "Runtime data automatically managed by the Timer plugin. Do not edit manually.\n",
+                "config.yml holds your settings; this file holds plugin-generated state ",
+                "(timer values, targets, animation overrides, multi-timers)."));
     }
 
-    /**
-     * Get the FileConfiguration backing the plugin's runtime data file.
-     *
-     * @return the data config (data.yml)
-     */
     public FileConfiguration getDataConfig() {
         return dataConfig;
     }
 
-    /**
-     * Save the plugin's runtime data to the data file on disk.
-     */
     public void saveDataConfig() {
         if (dataConfig == null) {
             return;
@@ -287,9 +307,6 @@ public final class Timer extends JavaPlugin {
         }
     }
 
-    /**
-     * Reload the plugin's runtime data file from disk.
-     */
     public void reloadDataConfig() {
         loadDataConfig();
     }
@@ -303,8 +320,9 @@ public final class Timer extends JavaPlugin {
         this.disallowCustomSeed = getConfig().getBoolean("reset.disallow-custom-seed", true);
         this.hideSeed = getConfig().getBoolean("reset.hide-seed", true);
         this.resetOnPlayerDeath = getConfig().getBoolean("reset.reset-on-player-death", false);
+        this.resetEnabled = getConfig().getBoolean("reset.enabled", true);
 
-        if (this.deleteOnBoot) {
+        if (this.resetEnabled && this.deleteOnBoot) {
             getLogger().warning("DELETE-ON-BOOT is enabled! Worlds will be deleted on server start.");
         }
     }
@@ -313,30 +331,38 @@ public final class Timer extends JavaPlugin {
         return worldsToDeleteOnReset;
     }
 
-    /**
-     * Whether players/admins are allowed to specify a custom seed via /reset.
-     *
-     * @return true if custom seeds are disallowed
-     */
     public boolean isCustomSeedDisallowed() {
         return disallowCustomSeed;
     }
 
-    /**
-     * Whether the seed being used for a reset is hidden from players.
-     *
-     * @return true if the seed is hidden
-     */
     public boolean isSeedHidden() {
         return hideSeed;
     }
 
-    /**
-     * Whether the world should reset instantly when a player dies.
-     *
-     * @return true if a player death triggers a world reset
-     */
     public boolean isResetOnPlayerDeath() {
         return resetOnPlayerDeath;
+    }
+
+    public boolean isResetEnabled() {
+        return resetEnabled;
+    }
+
+    public void setResetEnabled(boolean enabled, String source, String reason) {
+        this.resetEnabled = enabled;
+
+        String action = enabled ? "enabled" : "disabled";
+        String log = "World reset features " + action + " "
+                + (source == null ? "via API" : "by " + source)
+                + (reason == null || reason.isBlank() ? "" : ": " + reason)
+                + ".";
+        getLogger().info(log);
+
+        if (!enabled) {
+            unregisterResetCommand();
+        } else {
+            ResetCommand resetCommand = new ResetCommand(this);
+            Objects.requireNonNull(getCommand("reset")).setExecutor(resetCommand);
+            Objects.requireNonNull(getCommand("reset")).setTabCompleter(resetCommand);
+        }
     }
 }

@@ -302,7 +302,7 @@ public class TimerAPI {
      *
      * <p>Must be called from the main thread.</p>
      *
-     * @return true if the reset was prepared
+     * @return true if the reset was prepared, false if refused (e.g. reset disabled by config)
      */
     public boolean resetWorld() {
         return resetWorld(ThreadLocalRandom.current().nextLong());
@@ -313,7 +313,8 @@ public class TimerAPI {
      * Kicks all players and restarts the server to regenerate the worlds.
      * The worlds are deleted during the next startup before they are loaded.
      *
-     * <p>Will refuse (return false) if custom seeds are disallowed by the
+     * <p>Will refuse (return false) if reset features are disabled by the
+     * 'reset.enabled' config option, or if custom seeds are disallowed by the
      * 'reset.disallow-custom-seed' config option.</p>
      *
      * <p>Must be called from the main thread.</p>
@@ -322,6 +323,12 @@ public class TimerAPI {
      * @return true if the reset was prepared, false if refused
      */
     public boolean resetWorld(long seed) {
+        if (!plugin.isResetEnabled()) {
+            plugin.getLogger().warning(
+                    "World reset requested via API, but reset features are disabled by config.");
+            return false;
+        }
+
         if (plugin.isCustomSeedDisallowed()) {
             plugin.getLogger().warning(
                     "Custom world reset seed requested via API, but custom seeds are disallowed by config.");
@@ -340,6 +347,46 @@ public class TimerAPI {
      */
     public boolean isWorldResetPending() {
         return plugin.isPendingWorldReset();
+    }
+
+    /**
+     * Check whether the world reset features are enabled.
+     * When disabled, the /reset command is not registered, reset listeners are
+     * not active, and {@link #resetWorld()} / {@link #resetWorld(long)} refuse to run.
+     *
+     * @return true if world reset features are enabled
+     */
+    public boolean isResetEnabled() {
+        return plugin.isResetEnabled();
+    }
+
+    /**
+     * Enable or disable the world reset features at runtime.
+     * When disabled, the /reset command stops working, reset listeners are
+     * ineffective, and {@link #resetWorld()} / {@link #resetWorld(long)} refuse to run.
+     * The change applies to the running session only; the config.yml value is
+     * restored on the next server start.
+     *
+     * @param enabled true to enable, false to disable
+     * @param by      the plugin requesting the change
+     */
+    public void setResetEnabled(boolean enabled, Plugin by) {
+        setResetEnabled(enabled, by, null);
+    }
+
+    /**
+     * Enable or disable the world reset features at runtime, optionally explaining why.
+     * When disabled, the /reset command stops working, reset listeners are
+     * ineffective, and {@link #resetWorld()} / {@link #resetWorld(long)} refuse to run.
+     * The change applies to the running session only; the config.yml value is
+     * restored on the next server start.
+     *
+     * @param enabled true to enable, false to disable
+     * @param by      the plugin requesting the change
+     * @param reason  optional human-readable reason, logged for admins
+     */
+    public void setResetEnabled(boolean enabled, Plugin by, String reason) {
+        plugin.setResetEnabled(enabled, by == null ? null : by.getName(), reason);
     }
 
 
